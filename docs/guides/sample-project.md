@@ -148,45 +148,16 @@ the Cloud Console.
 Use the following `ccloud` commands to get the integer identifier for the `confluentcloud_service_account` resource by using the
 Cloud CLI. 
 
-1.  Run the following command to find the new environment:
+1.  Run the following command to login:
 
     ```bash
-    ccloud environment list
+    ccloud login
     ```
 
-    Your output should resemble:
-
-    ```
-          Id      |   Name
-    +-------------+----------+
-        env-31dgj | test_env
-    ```
-
-    The **Id** column shows the environment's identifier, which you can use
-    to find resources in the environment. Save the environment ID.
-
-2.  Run the following command to find the new cluster. Replace `<env_id>` with
-    your environment's identifier.
+2.  Run the following command to find the service account:
 
     ```bash
-    ccloud kafka cluster list --environment <env_id>
-    ```
-
-    Your output should resemble:
-
-    ```
-          Id      |     Name     | Type  | Provider |   Region    | Availability | Status
-    +-------------+--------------+-------+----------+-------------+--------------+--------+
-        lkc-odgpo | test_cluster | BASIC | gcp      | us-central1 | single-zone  | UP
-    ```
-
-    The **Id** column shows the cluster's identifier, which you can use
-    to inspect resources in the cluster. Save the cluster ID.
-
-3.  Run the following command to find the service account:
-
-    ```bash
-    ccloud service-account list
+    ccloud service-account list | grep 'Resource ID\|-+-\|test_sa'
     ```
 
     Your output should resemble:
@@ -224,11 +195,13 @@ creating Kafka topics and ACLs.
 
 The following steps show how to create a Kafka API key by using the Cloud Console.
 
-1.  In the navigation menu, click **Data integration** and click **API keys**.
+1.  Click into the **test_env** environment and then click **test_cluster**.
 
-2.  Click **Add key**, and in the Create Key page, click **Global access** and
+2.  In the navigation menu on the left, click **Data integration** and click **API keys**.
+
+3.  Click **Add key**, and in the Create Key page, click **Global access** and
     **Next**. Your API key is generated and displayed for easy copying.
-3.  Copy and save your API key and secret in a secure location. When you're
+4.  Copy and save your API key and secret in a secure location. When you're
     done, click **I have saved my API key** and click **Save**.
 
 ### Use the Cloud CLI to get your Kafka API key
@@ -253,25 +226,35 @@ Save your Kafka API key and secret in a secure location.
     variable "kafka_api_key" {
       type = string
       description = "Kafka API Key"
-      sensitive = true
-      default = ""
     }
 
     variable "kafka_api_secret" {
       type = string
       description = "Kafka API Secret"
       sensitive = true  
-      default = ""
     }
 
     variable "service_account_int_id" {
       type = number
       description = "Service Account Integer ID"
-      default = 0
     }
     ```
 
-2.  Append the following resource definitions into `main.tf` and save the file.
+2.  Create a new file named `terraform.tfvars` and copy the following into it.
+    Add the correct values for each variable after the equals sign.
+
+    -> **Important:** Do not store production secrets in a `.tfvars` file. Instead,
+    [use environment variables, encrypted files, or a secret store](https://blog.gruntwork.io/a-comprehensive-guide-to-managing-secrets-in-your-terraform-code-1d586955ace1)
+
+    ```terraform
+    kafka_api_key="<key>"
+    kafka_api_secret="<secret>"
+    service_account_int_id=<id>
+    ```
+
+    -> **Note:** Quotation marks are required around the API key and secret strings.
+
+3.  Append the following resource definitions into `main.tf` and save the file.
 
     ```terraform
     resource "confluentcloud_kafka_topic" "orders" {
@@ -324,7 +307,7 @@ Save your Kafka API key and secret in a secure location.
     }
     ```
 
-3.  Run the following command to create the plan.
+4.  Run the following command to create the plan.
 
     ```bash
     terraform plan -parallelism=1 -out=tfplan_add_topic_and_2_acls
@@ -332,7 +315,7 @@ Save your Kafka API key and secret in a secure location.
 
     Your output should resemble:
 
-4.  Run the following command to apply the plan.
+5.  Run the following command to apply the plan.
     
     ```bash
     terraform apply -parallelism=1 tfplan_add_topic_and_2_acls
