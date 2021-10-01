@@ -1,0 +1,65 @@
+before:
+  hooks:
+    # to avoid goreleaser error due to `make deps` on CI: git is currently in a dirty state
+    # we should never see go.mod be dirty because we `go build -mod=readonly`, but we can't well control go.sum updates
+    - git checkout go.sum
+
+builds:
+  - binary: '{{ .ProjectName }}_{{ .Version }}'
+    flags:
+      - -mod=readonly
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    gcflags:
+      - all=-trimpath={{ .Env.GOPATH }}
+    asmflags:
+      - all=-trimpath={{ .Env.GOPATH }}
+    goos:
+      - linux
+      - darwin
+      - windows
+      - freebsd
+    goarch:
+      - amd64
+      - '386'
+      - arm
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: '386'
+    env:
+      - CGO_ENABLED=0
+    # https://goreleaser.com/customization/build/#reproducible-builds
+    mod_timestamp: '{{ .CommitTimestamp }}'
+
+archives:
+  - name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    format: zip
+    files:
+      - README.md
+      - LICENSE
+      - legal/**/*
+
+checksum:
+  # This suffix is required for Terraform Registry
+  # https://www.terraform.io/docs/registry/providers/publishing.html#manually-preparing-a-release
+  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
+
+signs:
+  - artifacts: checksum
+    cmd: gpg
+    args: ['--batch', '-u', '{{ .Env.GPG_FINGERPRINT }}', '--output', '${signature}', '--detach-sign', '${artifact}']
+    stdin: '{{ .Env.GPG_PASSWORD }}'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^chore:'
+      - '[ci skip]$'
+      - make fmt
+      - fix go.sum
+      - go mod tidy
+
+release:
+  draft: true
