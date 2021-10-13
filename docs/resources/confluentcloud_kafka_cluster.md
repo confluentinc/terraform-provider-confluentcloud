@@ -44,7 +44,7 @@ resource "confluentcloud_kafka_cluster" "basic-cluster" {
   availability = "SINGLE_ZONE"
   cloud        = "AZURE"
   region       = "centralus"
-  basic {}
+  standard {}
 
   environment {
     id = confluentcloud_environment.test-env.id
@@ -61,10 +61,12 @@ resource "confluentcloud_environment" "test-env" {
 
 resource "confluentcloud_kafka_cluster" "basic-cluster" {
   display_name = "basic_kafka_cluster"
-  availability = "SINGLE_ZONE"
+  availability = "MULTI_ZONE"
   cloud        = "GCP"
   region       = "us-central1"
-  basic {}
+  dedicated {
+    cku = 2
+  }
 
   environment {
     id = confluentcloud_environment.test-env.id
@@ -83,10 +85,16 @@ The following arguments are supported:
 - `region` - (Required String) The cloud service provider region where the Kafka cluster is running, for example, `us-west-2`). See [Cloud Providers and Regions](https://docs.confluent.io/cloud/current/clusters/regions.html#cloud-providers-and-regions) for a full list of options for AWS, Azure, and GCP.
 - `basic` - (Optional Configuration Block) The configuration of the Basic Kafka cluster.
 - `standard` - (Optional Configuration Block) The configuration of the Standard Kafka cluster.
+- `dedicated` - (Optional Configuration Block) The configuration of the Dedicated Kafka cluster. It supports the following:
+    - `cku` - (Required Number) The number of Confluent Kafka Units (CKUs) for Dedicated cluster types. The minimum number of CKUs for `SINGLE_ZONE` dedicated clusters is `1` whereas `MULTI_ZONE` dedicated clusters must have more than `2` CKUs.
 
--> **Note:** At least one from the `basic` and `standard` configurations blocks must be specified.
+-> **Note:** At least one from the `basic`, `standard`, and `dedicated` configuration blocks must be specified.
 
 !> **Warning:** You can upgrade clusters from `basic` to `standard`, but you can't downgrade from `standard` to `basic`.
+
+!> **Warning:** You can't upgrade clusters from `basic` or `standard` to `dedicated`.
+
+!> **Warning:** You can't downgrade clusters from `dedicated` to `basic` or `standard`.
 
 - `environment` (Required Configuration Block) supports the following:
     - `id` - (Required String) The ID of the Environment that the Kafka cluster belongs to, for example, `env-abc123`.
