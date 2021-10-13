@@ -90,11 +90,8 @@ The following arguments are supported:
 
 -> **Note:** At least one from the `basic`, `standard`, and `dedicated` configuration blocks must be specified.
 
-!> **Warning:** You can upgrade clusters from `basic` to `standard`, but you can't downgrade from `standard` to `basic`.
+!> **Warning:** You can only upgrade clusters from `basic` to `standard`.
 
-!> **Warning:** You can't upgrade clusters from `basic` or `standard` to `dedicated`.
-
-!> **Warning:** You can't downgrade clusters from `dedicated` to `basic` or `standard`.
 
 - `environment` (Required Configuration Block) supports the following:
     - `id` - (Required String) The ID of the Environment that the Kafka cluster belongs to, for example, `env-abc123`.
