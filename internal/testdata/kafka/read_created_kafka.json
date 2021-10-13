@@ -27,6 +27,6 @@
     "region": "us-central1"
   },
   "status": {
-    "phase": "PROVISIONING"
+    "phase": "PROVISIONED"
   }
 }

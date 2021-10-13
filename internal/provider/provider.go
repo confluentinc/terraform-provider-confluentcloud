@@ -96,7 +96,7 @@ func New(version string) func() *schema.Provider {
 				paramWaitUntil: {
 					Type:        schema.TypeString,
 					Optional:    true,
-					Default:     waitUntilBootstrapAvailable,
+					Default:     waitUntilProvisioned,
 					Description: "Terraform apply will wait until the specified field that is populated.",
 					ValidateDiagFunc: func(i interface{}, path cty.Path) diag.Diagnostics {
 						waitUntil := i.(string)
