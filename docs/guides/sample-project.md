@@ -103,13 +103,19 @@ Kafka cluster.
     }
     ```
 
-2.  Run the following command to create the plan:
+2.  Run the following command to initialize the Confluent Cloud Terraform provider:
+
+    ```bash
+    terraform init
+    ```
+
+3.  Run the following command to create the plan:
 
     ```bash
     terraform plan -parallelism=1 -out=tfplan_add_sa_env_and_cluster
     ```
 
-3.  Run the following command to apply the plan and create cloud resources:
+4.  Run the following command to apply the plan and create cloud resources:
 
     ```bash
     terraform apply -parallelism=1 tfplan_add_sa_env_and_cluster
