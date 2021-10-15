@@ -61,8 +61,7 @@ func serviceAccountUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 
 	updateReq := iam.NewV2ServiceAccountUpdate()
 
-	// TODO: need a way to explicitly set values to empty strings (*string)
-	if description != "" {
+	if d.HasChange(paramDescription) {
 		updateReq.SetDescription(description)
 	}
 
