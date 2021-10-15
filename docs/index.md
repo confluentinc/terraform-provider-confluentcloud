@@ -17,8 +17,8 @@ Use the Confluent Cloud provider to deploy and manage [Confluent Cloud](https://
 ```terraform
 # Configure the Confluent Cloud Provider
 provider "confluentcloud" {
-  username = var.confluent_cloud_api_key    # optionally use CONFLUENT_CLOUD_API_KEY env var
-  password = var.confluent_cloud_api_secret # optionally use CONFLUENT_CLOUD_API_SECRET env var
+  api_key    = var.confluent_cloud_api_key    # optionally use CONFLUENT_CLOUD_API_KEY env var
+  api_secret = var.confluent_cloud_api_secret # optionally use CONFLUENT_CLOUD_API_SECRET env var
 }
 # Create the resources
 ```
@@ -48,8 +48,8 @@ You can also provide static credentials in-line directly, or by input variable (
 
 ```terraform
 provider "confluentcloud" {
-  username = var.confluent_cloud_api_key
-  password = var.confluent_cloud_api_secret
+  api_key    = var.confluent_cloud_api_key
+  api_secret = var.confluent_cloud_api_secret
 }
 ```
 
