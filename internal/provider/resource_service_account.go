@@ -55,16 +55,15 @@ func serviceAccountUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 		return diag.FromErr(fmt.Errorf("display_name field cannot be updated for a service account"))
 	}
 
-	c := meta.(*Client)
-
-	description := extractDescription(d)
-
 	updateReq := iam.NewV2ServiceAccountUpdate()
-
 	if d.HasChange(paramDescription) {
+		description := extractDescription(d)
 		updateReq.SetDescription(description)
+	} else {
+		return nil
 	}
 
+	c := meta.(*Client)
 	req := c.iamClient.ServiceAccountsV2Api.UpdateV2ServiceAccount(c.iamApiContext(ctx), d.Id()).V2ServiceAccountUpdate(*updateReq)
 
 	_, _, err := req.Execute()
