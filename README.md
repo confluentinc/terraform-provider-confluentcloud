@@ -10,7 +10,7 @@ This provider is maintained by Confluent.
 
 ## Documentation
 
-Full documentation is available on the [Terraform website](https://terraform.io/docs/providers/confluentinc/confluentcloud/index.html).
+Full documentation is available on the [Terraform Registry website](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest).
 
 ## License
 
