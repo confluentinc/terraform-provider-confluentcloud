@@ -211,7 +211,6 @@ func testAccCheckAclConfig(confluentCloudBaseUrl, mockServerUrl string) string {
 	  resource_name = "%s"
 	  pattern_type = "%s"
 	  principal = "%s"
-	  host = "%s"
 	  operation = "%s"
 	  permission = "%s"
 
@@ -223,7 +222,7 @@ func testAccCheckAclConfig(confluentCloudBaseUrl, mockServerUrl string) string {
 	  }
 	}
 	`, confluentCloudBaseUrl, aclResourceLabel, clusterId, aclResourceType, aclResourceName, aclPatternType, aclPrincipal,
-		aclHost, aclOperation, aclPermission, mockServerUrl)
+		aclOperation, aclPermission, mockServerUrl)
 }
 
 func testAccCheckAclExists(n string) resource.TestCheckFunc {

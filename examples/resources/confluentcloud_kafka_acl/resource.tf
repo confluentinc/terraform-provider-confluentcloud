@@ -20,7 +20,6 @@ resource "confluentcloud_kafka_acl" "describe-basic-cluster" {
   resource_name = "kafka-cluster"
   pattern_type = "LITERAL"
   principal = "User:12345"
-  host = "*"
   operation = "DESCRIBE"
   permission = "ALLOW"
   http_endpoint = confluentcloud_kafka_cluster.basic-cluster.http_endpoint

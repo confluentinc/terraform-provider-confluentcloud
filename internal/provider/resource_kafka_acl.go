@@ -134,7 +134,8 @@ func kafkaAclResource() *schema.Resource {
 			},
 			paramHost: {
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
+				Default:     "*",
 				ForceNew:    true,
 				Description: "The host for the ACL.",
 			},

@@ -296,7 +296,6 @@ Save your Kafka API key and secret in a secure location.
       resource_name = confluentcloud_kafka_topic.orders.topic_name
       pattern_type = "LITERAL"
       principal = "User:${var.service_account_int_id}"
-      host = "*"
       operation = "DESCRIBE"
       permission = "ALLOW"
       http_endpoint = confluentcloud_kafka_cluster.test-basic-cluster.http_endpoint
@@ -312,7 +311,6 @@ Save your Kafka API key and secret in a secure location.
       resource_name = "kafka-cluster"
       pattern_type = "LITERAL"
       principal = "User:${var.service_account_int_id}"
-      host = "*"
       operation = "DESCRIBE"
       permission = "ALLOW"
       http_endpoint = confluentcloud_kafka_cluster.test-basic-cluster.http_endpoint
