@@ -22,6 +22,7 @@ import (
 	kafkarestv3 "github.com/confluentinc/ccloud-sdk-go-v2/kafkarest/v3"
 	org "github.com/confluentinc/ccloud-sdk-go-v2/org/v2"
 	"log"
+	"time"
 )
 
 func (c *Client) cmkApiContext(ctx context.Context) context.Context {
@@ -66,6 +67,14 @@ func (c *Client) kafkaRestApiContext(ctx context.Context, clusterApiKey, cluster
 	}
 	log.Printf("[WARN] Could not find cluster credentials for Confluent Cloud")
 	return ctx
+}
+
+func getTimeoutFor(clusterType string) time.Duration {
+	if clusterType == kafkaClusterTypeDedicated {
+		return 24 * time.Hour
+	} else {
+		return 1 * time.Hour
+	}
 }
 
 func stringToAclResourceType(aclResourceType string) (kafkarestv3.AclResourceType, error) {
