@@ -75,7 +75,7 @@ Kafka cluster.
       required_providers {
         confluentcloud = {
           source  = "confluentinc/confluentcloud"
-          version = "0.1.0"
+          version = "0.2.0"
         }
       }
     }
