@@ -126,11 +126,11 @@ Kafka cluster.
     ```
     confluentcloud_service_account.test-sa: Creating...
     confluentcloud_environment.test-env: Creating...
-    confluentcloud_environment.test-env: Creation complete after 1s [id=env-***] <--- the Environment's ID
+    confluentcloud_environment.test-env: Creation complete after 1s [id=env-31dgj] <--- the Environment's ID
     confluentcloud_kafka_cluster.test-basic-cluster: Creating...
-    confluentcloud_service_account.test-sa: Creation complete after 1s [id=sa-***] <--- the Service Account's ID
+    confluentcloud_service_account.test-sa: Creation complete after 1s [id=sa-l7v772] <--- the Service Account's ID
     confluentcloud_kafka_cluster.test-basic-cluster: Still creating... [10s elapsed]
-    confluentcloud_kafka_cluster.test-basic-cluster: Creation complete after 14s [id=lkc-***] <--- the Kafka cluster's ID
+    confluentcloud_kafka_cluster.test-basic-cluster: Creation complete after 14s [id=env-31dgj/lkc-odgpo/lkc-odgpo] <--- the Kafka cluster's composite ID
 
     Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
     ```
@@ -140,7 +140,7 @@ Kafka cluster.
 
 ## Inspect your resources
 
-You can find the created resources (and their IDs: `sa-***`, `env-***`, `lkc-***` 
+You can find the created resources (and their IDs: `sa-l7v772`, `env-31dgj`, `lkc-odgpo` 
 from Terraform output) on both [Cloud Console](https://confluent.cloud/environments) and
 [Confluent Cloud CLI](https://docs.confluent.io/ccloud-cli/current/index.html):
 
@@ -224,7 +224,7 @@ The following steps show how to create a Kafka API key by using the Cloud Consol
 ### Use the Cloud CLI to get your Kafka API key
 
 If you're using the Confluent Cloud CLI, the following command creates your
-API key and secret. Replace `<cluster_id>` and `<env_id>` with your cluster ID and environment ID respectively.
+API key and secret. Replace `<cluster_id>` and `<env_id>` with your cluster ID (`lkc-odgpo`) and environment ID respectively.
 
 ```bash
 ccloud api-key create --resource <cluster_id> --environment <env_id> 
@@ -340,10 +340,10 @@ Save your Kafka API key and secret in a secure location.
     ```
     confluentcloud_kafka_acl.describe-test-basic-cluster: Creating...
     confluentcloud_kafka_topic.orders: Creating...
-    confluentcloud_kafka_acl.describe-test-basic-cluster: Creation complete after 1s [id=lkc-odgpo/CLUSTER/kafka-cluster/LITERAL/User:309715/*/DESCRIBE/ALLOW]
-    confluentcloud_kafka_topic.orders: Creation complete after 2s [id=lkc-odgpo/orders]
+    confluentcloud_kafka_acl.describe-test-basic-cluster: Creation complete after 1s [id=env-31dgj/lkc-odgpo/lkc-odgpo/CLUSTER:kafka-cluster:LITERAL:User:309715:*:DESCRIBE:ALLOW]
+    confluentcloud_kafka_topic.orders: Creation complete after 2s [id=env-31dgj/lkc-odgpo/lkc-odgpo/orders]
     confluentcloud_kafka_acl.describe-orders: Creating...
-    confluentcloud_kafka_acl.describe-orders: Creation complete after 0s [id=lkc-odgpo/TOPIC/orders/LITERAL/User:309715/*/DESCRIBE/ALLOW]
+    confluentcloud_kafka_acl.describe-orders: Creation complete after 0s [id=env-31dgj/lkc-odgpo/lkc-odgpo/TOPIC:orders:LITERAL:User:309715:*:DESCRIBE:ALLOW]
 
     Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
     ```
@@ -360,16 +360,16 @@ Your output should resemble:
 
 ```
 confluentcloud_service_account.test-sa: Destroying... [id=sa-l7v772]
-confluentcloud_kafka_acl.describe-orders: Destroying... [id=lkc-odgpo/TOPIC/orders/LITERAL/User:309715/*/DESCRIBE/ALLOW]
-confluentcloud_kafka_acl.describe-test-basic-cluster: Destroying... [id=lkc-odgpo/CLUSTER/kafka-cluster/LITERAL/User:309715/*/DESCRIBE/ALLOW]
+confluentcloud_kafka_acl.describe-orders: Destroying... [id=env-31dgj/lkc-odgpo/lkc-odgpo/TOPIC:orders:LITERAL:User:309715:*:DESCRIBE:ALLOW]
+confluentcloud_kafka_acl.describe-test-basic-cluster: Destroying... [id=env-31dgj/lkc-odgpo/lkc-odgpo/TOPIC:orders:LITERAL:User:309715:*:DESCRIBE:ALLOW]
 confluentcloud_kafka_acl.describe-orders: Destruction complete after 2s
 confluentcloud_kafka_acl.describe-test-basic-cluster: Destruction complete after 2s
-confluentcloud_kafka_topic.orders: Destroying... [id=lkc-odgpo/orders]
+confluentcloud_kafka_topic.orders: Destroying... [id=env-31dgj/lkc-odgpo/lkc-odgpo/orders]
 confluentcloud_service_account.test-sa: Destruction complete after 2s
 confluentcloud_kafka_topic.orders: Destruction complete after 0s
-confluentcloud_kafka_cluster.test-basic-cluster: Destroying... [id=lkc-odgpo]
-confluentcloud_kafka_cluster.test-basic-cluster: Still destroying... [id=lkc-odgpo, 10s elapsed]
-confluentcloud_kafka_cluster.test-basic-cluster: Still destroying... [id=lkc-odgpo, 20s elapsed]
+confluentcloud_kafka_cluster.test-basic-cluster: Destroying... [id=env-31dgj/lkc-odgpo/lkc-odgpo]
+confluentcloud_kafka_cluster.test-basic-cluster: Still destroying... [id=env-31dgj/lkc-odgpo/lkc-odgpo, 10s elapsed]
+confluentcloud_kafka_cluster.test-basic-cluster: Still destroying... [id=env-31dgj/lkc-odgpo/lkc-odgpo, 20s elapsed]
 confluentcloud_kafka_cluster.test-basic-cluster: Destruction complete after 23s
 confluentcloud_environment.test-env: Destroying... [id=env-31dgj]
 confluentcloud_environment.test-env: Destroying... [id=env-31dgj]
