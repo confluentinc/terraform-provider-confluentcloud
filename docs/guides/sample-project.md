@@ -40,7 +40,7 @@ you need to access Confluent Cloud programmatically.
     API key and secret.
 
     ```bash
-    ccloud api-key create --resource "cloud" 
+    ccloud api-key create --resource "cloud"
     ```
 
     Save your API key and secret in a secure location.
@@ -52,13 +52,13 @@ you need to access Confluent Cloud programmatically.
     export CONFLUENT_CLOUD_API_KEY="<cloud_api_key>"
     export CONFLUENT_CLOUD_API_SECRET="<cloud_api_secret>"
     ```
-    
+
     -> **Note:** Quotation marks are required around the API key and secret strings.
 
     The provider uses these environment variables to authenticate to
     Confluent Cloud.
 
-## Run Terraform to create your Kafka cluster 
+## Run Terraform to create your Kafka cluster
 
 Run Terraform to create a service account and an environment that has a
 Kafka cluster.
@@ -79,7 +79,7 @@ Kafka cluster.
         }
       }
     }
-    
+
     provider "confluentcloud" {}
 
     resource "confluentcloud_service_account" "test-sa" {
@@ -106,6 +106,7 @@ Kafka cluster.
 2.  Run the following command to create the plan:
 
     ```bash
+    terraform init
     terraform plan -parallelism=1 -out=tfplan_add_sa_env_and_cluster
     ```
 
@@ -134,7 +135,7 @@ Kafka cluster.
 
 ## Inspect your resources
 
-You can find the created resources (and their IDs: `sa-***`, `env-***`, `lkc-***` 
+You can find the created resources (and their IDs: `sa-***`, `env-***`, `lkc-***`
 from Terraform output) on both [Cloud Console](https://confluent.cloud/environments) and
 [Confluent Cloud CLI](https://docs.confluent.io/ccloud-cli/current/index.html):
 
@@ -148,8 +149,8 @@ the Cloud Console.
 1.  Log in to your [Confluent Cloud account](https://confluent.cloud/login).
 
 2.  Open the [Accounts and access tab](https://confluent.cloud/settings/org/accounts/service-accounts)
-    and click **test-sa**. Copy the integer from the URL. For example, 
-    in this URL, `https://confluent.cloud/settings/org/accounts/service-accounts/309715/settings`, 
+    and click **test-sa**. Copy the integer from the URL. For example,
+    in this URL, `https://confluent.cloud/settings/org/accounts/service-accounts/309715/settings`,
     the ID is `309715`.
 
 3.  Save the service account ID.
@@ -157,7 +158,7 @@ the Cloud Console.
 ### Use the Confluent Cloud CLI to inspect your resources
 
 Use the following `ccloud` commands to get the integer identifier for the `confluentcloud_service_account` resource by using the
-Cloud CLI. 
+Cloud CLI.
 
 1.  Run the following command to login:
 
@@ -181,7 +182,7 @@ Cloud CLI.
 
     The **Id** column shows the identifier for the service account. Save the
     service account ID in a secure location.
-    
+
     -> **Note:** We won’t expose integer IDs for the service account in v2.0 of the Cloud CLI.
 
 ## Run Terraform to create a Kafka topic
@@ -193,7 +194,7 @@ it in a plan to create a Kafka topic and related ACLs that authorize access.
 
 -> **Important** You must manually provision API keys for the service account so it can authenticate with the cluster. ACL management covers only authorization, not authentication and is a manual step after the creation of the Kafka cluster.
 
-The following steps show how to create a Kafka API key and use it in a 
+The following steps show how to create a Kafka API key and use it in a
 Terraform file to create a topic and its related ACLs.
 
 Create an API key and secret for the Kafka cluster by using the
@@ -221,7 +222,7 @@ If you're using the Confluent Cloud CLI, the following command creates your
 API key and secret. Replace `<cluster_id>` and `<env_id>` with your cluster ID and environment ID respectively.
 
 ```bash
-ccloud api-key create --resource <cluster_id> --environment <env_id> 
+ccloud api-key create --resource <cluster_id> --environment <env_id>
 ```
 
 Save your Kafka API key and secret in a secure location.
@@ -283,7 +284,7 @@ Save your Kafka API key and secret in a secure location.
         secret = var.kafka_api_secret
       }
     }
-    
+
     resource "confluentcloud_kafka_acl" "describe-orders" {
       kafka_cluster = confluentcloud_kafka_cluster.test-basic-cluster.id
       resource_type = "TOPIC"
@@ -299,7 +300,7 @@ Save your Kafka API key and secret in a secure location.
         secret = var.kafka_api_secret
       }
     }
-    
+
     resource "confluentcloud_kafka_acl" "describe-test-basic-cluster" {
       kafka_cluster = confluentcloud_kafka_cluster.test-basic-cluster.id
       resource_type = "CLUSTER"
@@ -320,13 +321,14 @@ Save your Kafka API key and secret in a secure location.
 4.  Run the following command to create the plan.
 
     ```bash
+    terraform init
     terraform plan -parallelism=1 -out=tfplan_add_topic_and_2_acls
     ```
 
     Your output should resemble:
 
 5.  Run the following command to apply the plan.
-    
+
     ```bash
     terraform apply -parallelism=1 tfplan_add_topic_and_2_acls
     ```
