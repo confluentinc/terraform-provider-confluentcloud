@@ -66,6 +66,7 @@ The following arguments are supported:
 
 -> **Note:** A Kafka API key consists of a key and a secret. Kafka API keys are required to interact with Kafka clusters in Confluent Cloud. Each Kafka API key is valid for one specific Kafka cluster.
 
+!> **Warning:** Terraform doesn't encrypt the sensitive `credentials` value of the `confluentcloud_kafka_acl` resource, so you must keep your state file secure to avoid exposing it. Refer to the [Terraform documentation](https://www.terraform.io/docs/language/state/sensitive-data.html) to learn more about securing your state file.
 
 ## Attributes Reference
 

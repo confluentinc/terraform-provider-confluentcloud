@@ -65,6 +65,8 @@ The following arguments are supported:
     - `name` - (Required String) The configuration name, for example, `cleanup.policy`.
     - `value` - (Required String) The configuration value, for example, `compact`.
 
+!> **Warning:** Terraform doesn't encrypt the sensitive `credentials` value of the `confluentcloud_kafka_topic` resource, so you must keep your state file secure to avoid exposing it. Refer to the [Terraform documentation](https://www.terraform.io/docs/language/state/sensitive-data.html) to learn more about securing your state file.
+
 ## Attributes Reference
 
 In addition to the preceding arguments, the following attributes are exported:
