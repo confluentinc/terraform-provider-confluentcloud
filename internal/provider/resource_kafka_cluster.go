@@ -184,7 +184,10 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	if isCkuUpdate {
 		oldCku, newCku := d.GetChange(paramDedicatedCku)
 		if newCku.(int) < oldCku.(int) {
-			return diag.FromErr(fmt.Errorf("decreasing the number of CKUs is currently not supported"))
+			// decreasing the number of CKUs aka Kafka Shrink operation
+			if newCku.(int)+1 != oldCku.(int) {
+				return diag.FromErr(fmt.Errorf("decreasing the number of CKUs by more than 1 is currently not supported"))
+			}
 		}
 		availability := extractAvailability(d)
 		err = ckuCheck(cku, availability)
