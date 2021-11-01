@@ -119,7 +119,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	c := meta.(*Client)
 
 	displayName := extractDisplayName(d)
-	environmentId, err := validEnvironmentId(c, d)
+	environmentId, err := validEnvironmentId(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -246,7 +246,7 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	cloud := extractCloud(d)
 	region := extractRegion(d)
 	clusterType := extractClusterType(d)
-	environmentId, err := validEnvironmentId(c, d)
+	environmentId, err := validEnvironmentId(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -415,7 +415,7 @@ func extractCku(d *schema.ResourceData) int32 {
 func kafkaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*Client)
 
-	environmentId, err := validEnvironmentId(c, d)
+	environmentId, err := validEnvironmentId(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -438,55 +438,12 @@ func kafkaImport(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		return nil, fmt.Errorf("invalid format for kafka import: expected '<env ID>/<lkc ID>'")
 	}
 
-	c := meta.(*Client)
-	cluster, resp, err := executeKafkaRead(c.cmkApiContext(ctx), c, parts[0], parts[1])
-	if err != nil {
-		return nil, err
-	}
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
+	environmentId := parts[0]
+	clusterId := parts[1]
+	d.SetId(clusterId)
+	log.Printf("[INFO] Kafka import for %s", clusterId)
 
-	d.SetId(parts[1])
-	err = setEnvironmentId(parts[0], d)
-	if err != nil {
-		return nil, err
-	}
-
-	err = d.Set(paramDisplayName, cluster.Spec.GetDisplayName())
-	if err == nil {
-		err = d.Set(paramAvailability, cluster.Spec.GetAvailability())
-	}
-	if err == nil {
-		err = d.Set(paramCloud, cluster.Spec.GetCloud())
-	}
-	if err == nil {
-		err = d.Set(paramRegion, cluster.Spec.GetRegion())
-	}
-
-	if err == nil {
-		if cluster.Spec.Config.CmkV2Basic != nil {
-			err = d.Set(paramBasicCluster, []interface{}{make(map[string]string)})
-		} else if cluster.Spec.Config.CmkV2Standard != nil {
-			err = d.Set(paramStandardCluster, []interface{}{make(map[string]string)})
-		} else if cluster.Spec.Config.CmkV2Dedicated != nil {
-			err = d.Set(paramDedicatedCluster, []interface{}{map[string]interface{}{
-				paramCku: cluster.Status.Cku,
-			}})
-		}
-	}
-
-	if err == nil {
-		err = d.Set(paramBootStrapEndpoint, cluster.Spec.GetKafkaBootstrapEndpoint())
-	}
-	if err == nil {
-		err = d.Set(paramHttpEndpoint, cluster.Spec.GetHttpEndpoint())
-	}
-	if err == nil {
-		err = setEnvironmentId(parts[0], d)
-	}
-
-	return []*schema.ResourceData{d}, err
+	return readAndSetResourceConfigurationArguments(ctx, d, meta, environmentId, clusterId)
 }
 
 func executeKafkaRead(ctx context.Context, c *Client, environmentId string, clusterId string) (cmk.CmkV2Cluster, *http.Response, error) {
@@ -495,21 +452,30 @@ func executeKafkaRead(ctx context.Context, c *Client, environmentId string, clus
 }
 
 func kafkaRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	log.Printf("[INFO] Kafka read for %s", d.Id())
-	c := meta.(*Client)
-	environmentId, err := validEnvironmentId(c, d)
+	environmentId, err := validEnvironmentId(d)
+	clusterId := d.Id()
 	if err != nil {
 		log.Printf("[ERROR] %s", err)
 		return diag.FromErr(err)
 	}
-	cluster, resp, err := executeKafkaRead(c.cmkApiContext(ctx), c, environmentId, d.Id())
+	log.Printf("[INFO] Kafka import for %s", clusterId)
+
+	_, err = readAndSetResourceConfigurationArguments(ctx, d, meta, environmentId, clusterId)
+
+	return diag.FromErr(err)
+}
+
+func readAndSetResourceConfigurationArguments(ctx context.Context, d *schema.ResourceData, meta interface{}, environmentId, clusterId string) ([]*schema.ResourceData, error) {
+	c := meta.(*Client)
+
+	cluster, resp, err := executeKafkaRead(c.cmkApiContext(ctx), c, environmentId, clusterId)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		d.SetId("")
-		return nil
+		return nil, nil
 	}
 	if err != nil {
-		log.Printf("[ERROR] Kafka cluster get failed for id %s, %v, %s", d.Id(), resp, err)
-		return diag.FromErr(err)
+		log.Printf("[ERROR] Kafka cluster get failed for id %s, %v, %s", clusterId, resp, err)
+		return nil, err
 	}
 
 	err = d.Set(paramDisplayName, cluster.Spec.GetDisplayName())
@@ -544,7 +510,8 @@ func kafkaRead(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	if err == nil {
 		err = setEnvironmentId(environmentId, d)
 	}
-	return diag.FromErr(err)
+
+	return []*schema.ResourceData{d}, err
 }
 
 func basicClusterSchema() *schema.Schema {

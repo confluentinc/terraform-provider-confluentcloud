@@ -157,7 +157,7 @@ func environmentSchema() *schema.Schema {
 	}
 }
 
-func validEnvironmentId(c *Client, d *schema.ResourceData) (string, error) {
+func validEnvironmentId(d *schema.ResourceData) (string, error) {
 	envIdResource := extractEnvironmentId(d)
 	if envIdResource != nil {
 		return *envIdResource, nil
