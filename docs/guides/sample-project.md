@@ -174,7 +174,7 @@ Cloud CLI.
 2.  Run the following command to find the service account:
 
     ```bash
-    ccloud service-account list | grep 'Resource ID\|-+-\|test_sa'
+    ccloud service-account list | grep 'Resource ID\|test_sa'
     ```
 
     Your output should resemble:
