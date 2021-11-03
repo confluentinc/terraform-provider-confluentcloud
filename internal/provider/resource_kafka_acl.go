@@ -166,7 +166,8 @@ func kafkaAclResource() *schema.Resource {
 
 func kafkaAclCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*Client)
-	updateKafkaRestClient(c, d)
+	httpEndpoint := extractHttpEndpoint(d)
+	updateKafkaRestClient(c, httpEndpoint)
 
 	clusterId := extractClusterId(d)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
@@ -208,7 +209,8 @@ func executeKafkaAclCreate(ctx context.Context, c *Client, clusterId string, req
 
 func kafkaAclDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*Client)
-	updateKafkaRestClient(c, d)
+	httpEndpoint := extractHttpEndpoint(d)
+	updateKafkaRestClient(c, httpEndpoint)
 
 	clusterId := extractClusterId(d)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
@@ -246,7 +248,8 @@ func kafkaAclRead(ctx context.Context, d *schema.ResourceData, meta interface{})
 	log.Printf("[INFO] Kafka ACL read for %s", d.Id())
 
 	c := meta.(*Client)
-	updateKafkaRestClient(c, d)
+	httpEndpoint := extractHttpEndpoint(d)
+	updateKafkaRestClient(c, httpEndpoint)
 
 	clusterId := extractClusterId(d)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)

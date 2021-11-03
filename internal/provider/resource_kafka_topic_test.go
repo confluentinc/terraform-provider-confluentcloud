@@ -24,6 +24,7 @@ import (
 	"github.com/walkerus/go-wiremock"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"testing"
 
@@ -43,8 +44,9 @@ const (
 	secondConfigValue                = "6789"
 	topicName                        = "test_topic_name"
 	topicResourceLabel               = "test_topic_resource_label"
-	clusterApiKey                    = "foo"
-	clusterApiSecret                 = "bar"
+	kafkaApiKey                      = "test_key"
+	kafkaApiSecret                   = "test_secret"
+	numberOfResourceAttributes       = "7"
 )
 
 var fullTopicResourceLabel = fmt.Sprintf("confluentcloud_kafka_topic.%s", topicResourceLabel)
@@ -146,6 +148,11 @@ func TestAccTopic(t *testing.T) {
 		)
 	_ = wiremockClient.StubFor(deleteTopicStub)
 
+	// Set fake values for secrets since those are required for importing
+	_ = os.Setenv("KAFKA_API_KEY", kafkaApiKey)
+	_ = os.Setenv("KAFKA_API_SECRET", kafkaApiSecret)
+	_ = os.Setenv("KAFKA_HTTP_ENDPOINT", mockServerUrl)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviderFactories,
@@ -159,6 +166,7 @@ func TestAccTopic(t *testing.T) {
 					testAccCheckTopicExists(fullTopicResourceLabel),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "kafka_cluster", clusterId),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "id", fmt.Sprintf("%s/%s", clusterId, topicName)),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "%", numberOfResourceAttributes),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "topic_name", topicName),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "partitions_count", strconv.Itoa(partitionCount)),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "http_endpoint", mockServerUrl),
@@ -167,7 +175,15 @@ func TestAccTopic(t *testing.T) {
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "config.retention.ms", "6789"),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.#", "1"),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.0.%", "2"),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.0.key", kafkaApiKey),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.0.secret", kafkaApiSecret),
 				),
+			},
+			{
+				// https://www.terraform.io/docs/extend/resources/import.html
+				ResourceName:      fullTopicResourceLabel,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -184,7 +200,7 @@ func testAccCheckTopicDestroy(s *terraform.State) error {
 			continue
 		}
 		deletedTopicId := rs.Primary.ID
-		_, response, err := c.kafkaRestClient.TopicV3Api.GetKafkaV3Topic(c.kafkaRestApiContext(context.Background(), clusterApiKey, clusterApiSecret), clusterId, topicName)
+		_, response, err := c.kafkaRestClient.TopicV3Api.GetKafkaV3Topic(c.kafkaRestApiContext(context.Background(), kafkaApiKey, kafkaApiSecret), clusterId, topicName)
 		if response != nil && (response.StatusCode == http.StatusForbidden || response.StatusCode == http.StatusNotFound) {
 			return nil
 		} else if err == nil && deletedTopicId != "" {
@@ -216,11 +232,11 @@ func testAccCheckTopicConfig(confluentCloudBaseUrl, mockServerUrl string) string
 	  }
 
 	  credentials {
-		key = "test_key"
-		secret = "test_secret"
+		key = "%s"
+		secret = "%s"
 	  }
 	}
-	`, confluentCloudBaseUrl, topicResourceLabel, clusterId, topicName, partitionCount, mockServerUrl, firstConfigName, firstConfigValue, secondConfigName, secondConfigValue)
+	`, confluentCloudBaseUrl, topicResourceLabel, clusterId, topicName, partitionCount, mockServerUrl, firstConfigName, firstConfigValue, secondConfigName, secondConfigValue, kafkaApiKey, kafkaApiSecret)
 }
 
 func testAccCheckTopicExists(n string) resource.TestCheckFunc {

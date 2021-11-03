@@ -22,6 +22,7 @@ import (
 	kafkarestv3 "github.com/confluentinc/ccloud-sdk-go-v2/kafkarest/v3"
 	org "github.com/confluentinc/ccloud-sdk-go-v2/org/v2"
 	"log"
+	"os"
 	"time"
 )
 
@@ -167,4 +168,33 @@ type Acl struct {
 	Host         string
 	Operation    kafkarestv3.AclOperation
 	Permission   kafkarestv3.AclPermission
+}
+
+type KafkaImportEnvVars struct {
+	kafkaApiKey       string
+	kafkaApiSecret    string
+	kafkaHttpEndpoint string
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
+}
+
+func checkEnvironmentVariablesForKafkaImportAreSet() (KafkaImportEnvVars, error) {
+	kafkaApiKey := getEnv("KAFKA_API_KEY", "")
+	kafkaApiSecret := getEnv("KAFKA_API_SECRET", "")
+	kafkaHttpEndpoint := getEnv("KAFKA_HTTP_ENDPOINT", "")
+	canImport := kafkaApiKey != "" && kafkaApiSecret != "" && kafkaHttpEndpoint != ""
+	if !canImport {
+		return KafkaImportEnvVars{}, fmt.Errorf("KAFKA_API_KEY, KAFKA_API_SECRET, and KAFKA_HTTP_ENDPOINT must be set for kafka topic / ACL import")
+	}
+	return KafkaImportEnvVars{
+		kafkaApiKey:       kafkaApiKey,
+		kafkaApiSecret:    kafkaApiSecret,
+		kafkaHttpEndpoint: kafkaHttpEndpoint,
+	}, nil
 }

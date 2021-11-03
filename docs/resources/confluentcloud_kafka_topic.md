@@ -72,3 +72,16 @@ The following arguments are supported:
 In addition to the preceding arguments, the following attributes are exported:
 
 - `id` - (String) The ID of the Kafka topic, in the format `<Kafka cluster ID>/<Kafka Topic name>`, for example, `lkc-abc123/orders-1`.
+
+## Import
+
+-> **Note:** `KAFKA_API_KEY` (`credentials.key`), `KAFKA_API_SECRET` (`credentials.secret`), and `KAFKA_HTTP_ENDPOINT` (`http_endpoint`) environment variables must be set before importing a Kafka topic.
+
+Import Kafka topics by using the Kafka cluster ID and Kafka topic name in the format `<Kafka cluster ID>/<Kafka topic name>`, for example:
+
+```shell
+$ export KAFKA_API_KEY="<kafka_api_key>"
+$ export KAFKA_API_SECRET="<kafka_api_secret>"
+$ export KAFKA_HTTP_ENDPOINT="<kafka_http_endpoint>"
+$ terraform import confluentcloud_kafka_topic.my_topic lkc-abc123/orders-123
+```
