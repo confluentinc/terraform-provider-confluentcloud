@@ -452,13 +452,13 @@ func executeKafkaRead(ctx context.Context, c *Client, environmentId string, clus
 }
 
 func kafkaRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	environmentId, err := validEnvironmentId(d)
 	clusterId := d.Id()
+	log.Printf("[INFO] Kafka read for %s", clusterId)
+	environmentId, err := validEnvironmentId(d)
 	if err != nil {
 		log.Printf("[ERROR] %s", err)
 		return diag.FromErr(err)
 	}
-	log.Printf("[INFO] Kafka import for %s", clusterId)
 
 	_, err = readAndSetResourceConfigurationArguments(ctx, d, meta, environmentId, clusterId)
 
