@@ -21,7 +21,7 @@ In this guide, you will:
 
 - A Confluent Cloud account. **[Sign up here](https://www.confluent.io/get-started?product=cloud)**
 - To run this example, you must be enrolled into the Confluent Cloud API v2 API Early Access program. To enroll,
-  [email Confluent support](mailto:cflt-tf-access@confluent.io?subject=Request%20to%20join%20v2%20API%20Early%20Access&body=I%E2%80%99d%20like%20to%20join%20the%20Confluent%20Cloud%20API%20Early%20Access%20for%20v2%20to%20provide%20early%20feedback%21%20My%20Cloud%20Organization%20ID%20is%20%3Cretrieve%20from%20https%3A//confluent.cloud/settings/billing/payment%3E.). If you're not
+  [email Confluent support](mailto:cflt-tf-access@confluent.io?subject=Request%20to%20join%20the%20Terraform%20Early%20Access%20Program&body=I%E2%80%99d%20like%20to%20join%20the%20Confluent%20Cloud%20API%20Early%20Access%20for%20v2%20to%20provide%20early%20feedback%21%20My%20Cloud%20Organization%20ID%20is%20%3Cretrieve%20from%20https%3A//confluent.cloud/settings/billing/payment%3E.). If you're not
   enrolled, you'll receive `403` errors when you apply Terraform plans.
 
 ## Get a Confluent Cloud API Key
