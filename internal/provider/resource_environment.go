@@ -32,7 +32,7 @@ func environmentResource() *schema.Resource {
 		UpdateContext: environmentUpdate,
 		DeleteContext: environmentDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: environmentImport,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Schema: map[string]*schema.Schema{
 			paramDisplayName: {
@@ -102,10 +102,6 @@ func environmentDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	}
 
 	return nil
-}
-
-func environmentImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
-	return []*schema.ResourceData{d}, nil
 }
 
 func executeEnvironmentRead(ctx context.Context, c *Client, environmentId string) (org.V2Environment, *http.Response, error) {

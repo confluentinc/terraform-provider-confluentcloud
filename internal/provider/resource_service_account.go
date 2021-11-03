@@ -32,7 +32,7 @@ func serviceAccountResource() *schema.Resource {
 		UpdateContext: serviceAccountUpdate,
 		DeleteContext: serviceAccountDelete,
 		Importer: &schema.ResourceImporter{
-			StateContext: serviceAccountImport,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Schema: map[string]*schema.Schema{
 			paramDisplayName: {
@@ -113,10 +113,6 @@ func serviceAccountDelete(ctx context.Context, d *schema.ResourceData, meta inte
 	}
 
 	return nil
-}
-
-func serviceAccountImport(_ context.Context, d *schema.ResourceData, _ interface{}) ([]*schema.ResourceData, error) {
-	return []*schema.ResourceData{d}, nil
 }
 
 func executeServiceAccountRead(ctx context.Context, c *Client, serviceAccountId string) (iam.V2ServiceAccount, *http.Response, error) {
