@@ -152,6 +152,11 @@ func TestAccTopic(t *testing.T) {
 	_ = os.Setenv("KAFKA_API_KEY", kafkaApiKey)
 	_ = os.Setenv("KAFKA_API_SECRET", kafkaApiSecret)
 	_ = os.Setenv("KAFKA_HTTP_ENDPOINT", mockServerUrl)
+	defer func() {
+		_ = os.Unsetenv("KAFKA_API_KEY")
+		_ = os.Unsetenv("KAFKA_API_SECRET")
+		_ = os.Unsetenv("KAFKA_HTTP_ENDPOINT")
+	}()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },

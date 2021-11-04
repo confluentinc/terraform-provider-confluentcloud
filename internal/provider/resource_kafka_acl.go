@@ -104,6 +104,9 @@ func kafkaAclResource() *schema.Resource {
 		CreateContext: kafkaAclCreate,
 		ReadContext:   kafkaAclRead,
 		DeleteContext: kafkaAclDelete,
+		Importer: &schema.ResourceImporter{
+			StateContext: kafkaAclImport,
+		},
 		Schema: map[string]*schema.Schema{
 			paramClusterId: clusterIdSchema(),
 			paramResourceType: {
@@ -247,19 +250,40 @@ func executeKafkaAclRead(ctx context.Context, c *Client, clusterId string, opts 
 func kafkaAclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Printf("[INFO] Kafka ACL read for %s", d.Id())
 
-	c := meta.(*Client)
-	httpEndpoint := extractHttpEndpoint(d)
-	updateKafkaRestClient(c, httpEndpoint)
-
 	clusterId := extractClusterId(d)
-	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 	acl, err := extractAcl(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	httpEndpoint := extractHttpEndpoint(d)
+
+	_, err = readAndSetAclResourceConfigurationArguments(ctx, d, meta, clusterId, acl, clusterApiKey, clusterApiSecret, httpEndpoint)
+
+	return diag.FromErr(err)
+}
+
+func createKafkaAclId(clusterId string, acl Acl) string {
+	return fmt.Sprintf("%s/%s", clusterId, strings.Join([]string{
+		string(acl.ResourceType),
+		acl.ResourceName,
+		string(acl.PatternType),
+		acl.Principal,
+		acl.Host,
+		string(acl.Operation),
+		string(acl.Permission),
+	}, "#"))
+}
+
+func readAndSetAclResourceConfigurationArguments(ctx context.Context, d *schema.ResourceData, meta interface{}, clusterId string, acl Acl, kafkaApiKey, kafkaApiSecret, httpEndpoint string) ([]*schema.ResourceData, error) {
+	c := meta.(*Client)
+	updateKafkaRestClient(c, httpEndpoint)
+
+	ctx = c.kafkaRestApiContext(ctx, kafkaApiKey, kafkaApiSecret)
+
 	opts := &kafkarestv3.GetKafkaV3AclsOpts{
 		ResourceType: optional.NewInterface(acl.ResourceType),
 		ResourceName: optional.NewString(acl.ResourceName),
@@ -270,30 +294,107 @@ func kafkaAclRead(ctx context.Context, d *schema.ResourceData, meta interface{})
 		Permission:   optional.NewInterface(acl.Permission),
 	}
 
-	_, resp, err := executeKafkaAclRead(c.kafkaRestApiContext(ctx, clusterApiKey, clusterApiSecret), c, clusterId, opts)
+	_, resp, err := executeKafkaAclRead(ctx, c, clusterId, opts)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		// https://learn.hashicorp.com/tutorials/terraform/provider-setup?in=terraform/providers
 		// If the resource isn't available, set the ID to an empty string so Terraform "destroys" the resource in state.
 		d.SetId("")
-		return nil
+		return nil, nil
 	}
 	if err != nil {
-		log.Printf("[ERROR] Kafka ACL get failed for id %s, %v, %s", d.Id(), resp, err)
-		return diag.FromErr(err)
+		log.Printf("[ERROR] Kafka ACL get failed for id %s, %v, %s", acl, resp, err)
+	}
+	if err == nil {
+		err = d.Set(paramClusterId, clusterId)
+	}
+	if err == nil {
+		err = d.Set(paramResourceType, acl.ResourceType)
+	}
+	if err == nil {
+		err = d.Set(paramResourceName, acl.ResourceName)
+	}
+	if err == nil {
+		err = d.Set(paramPatternType, acl.PatternType)
+	}
+	if err == nil {
+		err = d.Set(paramPrincipal, acl.Principal)
+	}
+	if err == nil {
+		err = d.Set(paramHost, acl.Host)
+	}
+	if err == nil {
+		err = d.Set(paramOperation, acl.Operation)
+	}
+	if err == nil {
+		err = d.Set(paramPermission, acl.Permission)
+	}
+	if err == nil {
+		err = setKafkaCredentials(kafkaApiKey, kafkaApiSecret, d)
+	}
+	if err == nil {
+		err = d.Set(paramHttpEndpoint, httpEndpoint)
 	}
 	d.SetId(createKafkaAclId(clusterId, acl))
-	return nil
+	return []*schema.ResourceData{d}, err
 }
 
-func createKafkaAclId(clusterId string, acl Acl) string {
-	return strings.Join([]string{
-		clusterId,
-		string(acl.ResourceType),
-		acl.ResourceName,
-		string(acl.PatternType),
-		acl.Principal,
-		acl.Host,
-		string(acl.Operation),
-		string(acl.Permission),
-	}, "/")
+func kafkaAclImport(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	log.Printf("[INFO] Kafka ACL import for %s", d.Id())
+
+	kafkaImportEnvVars, err := checkEnvironmentVariablesForKafkaImportAreSet()
+	if err != nil {
+		return nil, err
+	}
+
+	clusterIdAndSerializedAcl := d.Id()
+
+	parts := strings.Split(clusterIdAndSerializedAcl, "/")
+
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid format for kafka ACL import: expected '<lkc ID>/<resource type>#<resource name>#<pattern type>#<principal>#<host>#<operation>#<permission>'")
+	}
+
+	clusterId := parts[0]
+	serializedAcl := parts[1]
+
+	acl, err := deserializeAcl(serializedAcl)
+	if err != nil {
+		return nil, err
+	}
+
+	return readAndSetAclResourceConfigurationArguments(ctx, d, meta, clusterId, acl, kafkaImportEnvVars.kafkaApiKey, kafkaImportEnvVars.kafkaApiSecret, kafkaImportEnvVars.kafkaHttpEndpoint)
+}
+
+func deserializeAcl(serializedAcl string) (Acl, error) {
+	parts := strings.Split(serializedAcl, "#")
+	if len(parts) != 7 {
+		return Acl{}, fmt.Errorf("invalid format for kafka ACL import: expected '<lkc ID>/<resource type>#<resource name>#<pattern type>#<principal>#<host>#<operation>#<permission>'")
+	}
+
+	resourceType, err := stringToAclResourceType(parts[0])
+	if err != nil {
+		return Acl{}, err
+	}
+	patternType, err := stringToAclPatternType(parts[2])
+	if err != nil {
+		return Acl{}, err
+	}
+	operation, err := stringToAclOperation(parts[5])
+	if err != nil {
+		return Acl{}, err
+	}
+	permission, err := stringToAclPermission(parts[6])
+	if err != nil {
+		return Acl{}, err
+	}
+
+	return Acl{
+		ResourceType: resourceType,
+		ResourceName: parts[1],
+		PatternType:  patternType,
+		Principal:    parts[3],
+		Host:         parts[4],
+		Operation:    operation,
+		Permission:   permission,
+	}, nil
 }

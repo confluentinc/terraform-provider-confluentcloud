@@ -72,4 +72,17 @@ The following arguments are supported:
 
 In addition to the preceding arguments, the following attributes are exported:
 
-- `id` - (String) The ID of the Kafka ACL in the format `<Kafka cluster ID>/<Kafka ACL resource type>/<Kafka ACL resource name>/<Kafka ACL pattern type>/<Kafka ACL principal>/<Kafka ACL host>/<Kafka ACL operation>/<Kafka ACL permission>`.
+- `id` - (String) The ID of the Kafka ACL in the format `<Kafka cluster ID>/<Kafka ACL resource type>#<Kafka ACL resource name>#<Kafka ACL pattern type>#<Kafka ACL principal>#<Kafka ACL host>#<Kafka ACL operation>#<Kafka ACL permission>`.
+
+## Import
+
+-> **Note:** `KAFKA_API_KEY` (`credentials.key`), `KAFKA_API_SECRET` (`credentials.secret`), and `KAFKA_HTTP_ENDPOINT` (`http_endpoint`) environment variables must be set before importing a Kafka topic.
+
+Import Kafka ACLs by using the Kafka cluster ID and attributes of `confluentcloud_kafka_acl` resource in the format `<Kafka cluster ID>/<Kafka ACL resource type>#<Kafka ACL resource name>#<Kafka ACL pattern type>#<Kafka ACL principal>#<Kafka ACL host>#<Kafka ACL operation>#<Kafka ACL permission>`, for example:
+
+```shell
+$ export KAFKA_API_KEY="<kafka_api_key>"
+$ export KAFKA_API_SECRET="<kafka_api_secret>"
+$ export KAFKA_HTTP_ENDPOINT="<kafka_http_endpoint>"
+$ terraform import confluentcloud_kafka_acl.describe-cluster "lkc-12345/CLUSTER#kafka-cluster#LITERAL#User:67890#*#DESCRIBE#ALLOW"
+```

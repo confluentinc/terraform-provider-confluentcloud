@@ -340,10 +340,10 @@ Save your Kafka API key and secret in a secure location.
     ```
     confluentcloud_kafka_acl.describe-test-basic-cluster: Creating...
     confluentcloud_kafka_topic.orders: Creating...
-    confluentcloud_kafka_acl.describe-test-basic-cluster: Creation complete after 1s [id=lkc-odgpo/CLUSTER/kafka-cluster/LITERAL/User:309715/*/DESCRIBE/ALLOW]
+    confluentcloud_kafka_acl.describe-test-basic-cluster: Creation complete after 1s [id=lkc-odgpo/CLUSTER#kafka-cluster#LITERAL#User:309715#*#DESCRIBE#ALLOW]
     confluentcloud_kafka_topic.orders: Creation complete after 2s [id=lkc-odgpo/orders]
     confluentcloud_kafka_acl.describe-orders: Creating...
-    confluentcloud_kafka_acl.describe-orders: Creation complete after 0s [id=lkc-odgpo/TOPIC/orders/LITERAL/User:309715/*/DESCRIBE/ALLOW]
+    confluentcloud_kafka_acl.describe-orders: Creation complete after 0s [id=lkc-odgpo/TOPIC#orders#LITERAL#User:309715#*#DESCRIBE#ALLOW]
 
     Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
     ```
@@ -360,8 +360,8 @@ Your output should resemble:
 
 ```
 confluentcloud_service_account.test-sa: Destroying... [id=sa-l7v772]
-confluentcloud_kafka_acl.describe-orders: Destroying... [id=lkc-odgpo/TOPIC/orders/LITERAL/User:309715/*/DESCRIBE/ALLOW]
-confluentcloud_kafka_acl.describe-test-basic-cluster: Destroying... [id=lkc-odgpo/CLUSTER/kafka-cluster/LITERAL/User:309715/*/DESCRIBE/ALLOW]
+confluentcloud_kafka_acl.describe-orders: Destroying... [id=lkc-odgpo/TOPIC#orders#LITERAL#User:309715#*#DESCRIBE#ALLOW]
+confluentcloud_kafka_acl.describe-test-basic-cluster: Destroying... [id=lkc-odgpo/CLUSTER#kafka-cluster#LITERAL#User:309715#*#DESCRIBE#ALLOW]
 confluentcloud_kafka_acl.describe-orders: Destruction complete after 2s
 confluentcloud_kafka_acl.describe-test-basic-cluster: Destruction complete after 2s
 confluentcloud_kafka_topic.orders: Destroying... [id=lkc-odgpo/orders]

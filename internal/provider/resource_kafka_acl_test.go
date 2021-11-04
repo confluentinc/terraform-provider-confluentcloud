@@ -24,6 +24,7 @@ import (
 	"github.com/walkerus/go-wiremock"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -145,6 +146,16 @@ func TestAccAcls(t *testing.T) {
 		)
 	_ = wiremockClient.StubFor(deleteAclStub)
 
+	// Set fake values for secrets since those are required for importing
+	_ = os.Setenv("KAFKA_API_KEY", kafkaApiKey)
+	_ = os.Setenv("KAFKA_API_SECRET", kafkaApiSecret)
+	_ = os.Setenv("KAFKA_HTTP_ENDPOINT", mockServerUrl)
+	defer func() {
+		_ = os.Unsetenv("KAFKA_API_KEY")
+		_ = os.Unsetenv("KAFKA_API_SECRET")
+		_ = os.Unsetenv("KAFKA_HTTP_ENDPOINT")
+	}()
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviderFactories,
@@ -157,7 +168,7 @@ func TestAccAcls(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAclExists(fullAclResourceLabel),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "kafka_cluster", clusterId),
-					resource.TestCheckResourceAttr(fullAclResourceLabel, "id", fmt.Sprintf("%s/%s/%s/%s/%s/%s/%s/%s", clusterId, aclResourceType, aclResourceName, aclPatternType, aclPrincipal, aclHost, aclOperation, aclPermission)),
+					resource.TestCheckResourceAttr(fullAclResourceLabel, "id", fmt.Sprintf("%s/%s#%s#%s#%s#%s#%s#%s", clusterId, aclResourceType, aclResourceName, aclPatternType, aclPrincipal, aclHost, aclOperation, aclPermission)),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "resource_type", aclResourceType),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "resource_name", aclResourceName),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "pattern_type", aclPatternType),
@@ -168,6 +179,12 @@ func TestAccAcls(t *testing.T) {
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "credentials.#", "1"),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "credentials.0.%", "2"),
 				),
+			},
+			{
+				// https://www.terraform.io/docs/extend/resources/import.html
+				ResourceName:      fullAclResourceLabel,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
