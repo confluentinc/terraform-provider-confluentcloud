@@ -160,36 +160,6 @@ the Cloud Console.
 
 3.  Save the service account ID.
 
-### Use the Confluent Cloud CLI to inspect your resources
-
-Use the following `ccloud` commands to get the integer identifier for the `confluentcloud_service_account` resource by using the
-Cloud CLI. 
-
-1.  Run the following command to login:
-
-    ```bash
-    ccloud login
-    ```
-
-2.  Run the following command to find the service account:
-
-    ```bash
-    ccloud service-account list | grep 'Resource ID\|test_sa'
-    ```
-
-    Your output should resemble:
-
-    ```
-        Id   | Resource ID |  Name   |       Description
-    +--------+-------------+---------+-------------------------+
-      309715 | sa-l7v772   | test_sa | description for test_sa
-    ```
-
-    The **Id** column shows the identifier for the service account. Save the
-    service account ID in a secure location.
-    
-    -> **Note:** We won’t expose integer IDs for the service account in v2.0 of the Cloud CLI.
-
 ## Run Terraform to create a Kafka topic
 
 In previous steps, you used the Confluent Cloud Provider to create a Service Account, an
