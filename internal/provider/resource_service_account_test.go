@@ -71,7 +71,7 @@ func TestAccServiceAccount(t *testing.T) {
 	// nolint:errcheck
 	defer wiremockClient.ResetAllScenarios()
 	createSaResponse, _ := ioutil.ReadFile("../testdata/service_account/create_sa.json")
-	createSaStub := wiremock.Post(wiremock.URLPathEqualTo("/v2/service-accounts")).
+	createSaStub := wiremock.Post(wiremock.URLPathEqualTo("/iam/v2/service-accounts")).
 		InScenario(saScenarioName).
 		WhenScenarioStateIs(wiremock.ScenarioStateStarted).
 		WillSetStateTo(scenarioStateSaHasBeenCreated).
@@ -83,7 +83,7 @@ func TestAccServiceAccount(t *testing.T) {
 	_ = wiremockClient.StubFor(createSaStub)
 
 	readCreatedSaResponse, _ := ioutil.ReadFile("../testdata/service_account/read_created_sa.json")
-	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/v2/service-accounts/sa-1jjv26")).
+	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/iam/v2/service-accounts/sa-1jjv26")).
 		InScenario(saScenarioName).
 		WhenScenarioStateIs(scenarioStateSaHasBeenCreated).
 		WillReturn(
@@ -93,7 +93,7 @@ func TestAccServiceAccount(t *testing.T) {
 		))
 
 	readUpdatedSaResponse, _ := ioutil.ReadFile("../testdata/service_account/read_updated_sa.json")
-	patchSaStub := wiremock.Patch(wiremock.URLPathEqualTo("/v2/service-accounts/sa-1jjv26")).
+	patchSaStub := wiremock.Patch(wiremock.URLPathEqualTo("/iam/v2/service-accounts/sa-1jjv26")).
 		InScenario(saScenarioName).
 		WhenScenarioStateIs(scenarioStateSaHasBeenCreated).
 		WillSetStateTo(scenarioStateSaDescriptionHaveBeenUpdated).
@@ -104,7 +104,7 @@ func TestAccServiceAccount(t *testing.T) {
 		)
 	_ = wiremockClient.StubFor(patchSaStub)
 
-	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/v2/service-accounts/sa-1jjv26")).
+	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/iam/v2/service-accounts/sa-1jjv26")).
 		InScenario(saScenarioName).
 		WhenScenarioStateIs(scenarioStateSaDescriptionHaveBeenUpdated).
 		WillReturn(
@@ -114,7 +114,7 @@ func TestAccServiceAccount(t *testing.T) {
 		))
 
 	readDeletedSaResponse, _ := ioutil.ReadFile("../testdata/service_account/read_deleted_sa.json")
-	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/v2/service-accounts/sa-1jjv26")).
+	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/iam/v2/service-accounts/sa-1jjv26")).
 		InScenario(saScenarioName).
 		WhenScenarioStateIs(scenarioStateSaHasBeenDeleted).
 		WillReturn(
@@ -123,7 +123,7 @@ func TestAccServiceAccount(t *testing.T) {
 			http.StatusForbidden,
 		))
 
-	deleteSaStub := wiremock.Delete(wiremock.URLPathEqualTo("/v2/service-accounts/sa-1jjv26")).
+	deleteSaStub := wiremock.Delete(wiremock.URLPathEqualTo("/iam/v2/service-accounts/sa-1jjv26")).
 		InScenario(saScenarioName).
 		WhenScenarioStateIs(scenarioStateSaDescriptionHaveBeenUpdated).
 		WillSetStateTo(scenarioStateSaHasBeenDeleted).
@@ -180,9 +180,9 @@ func TestAccServiceAccount(t *testing.T) {
 		},
 	})
 
-	checkStubCount(t, wiremockClient, createSaStub, "POST /v2/service-accounts", expectedCountOne)
-	checkStubCount(t, wiremockClient, patchSaStub, "PATCH /v2/service-accounts/sa-1jjv26", expectedCountOne)
-	checkStubCount(t, wiremockClient, deleteSaStub, "DELETE /v2/service-accounts/sa-1jjv26", expectedCountOne)
+	checkStubCount(t, wiremockClient, createSaStub, "POST /iam/v2/service-accounts", expectedCountOne)
+	checkStubCount(t, wiremockClient, patchSaStub, "PATCH /iam/v2/service-accounts/sa-1jjv26", expectedCountOne)
+	checkStubCount(t, wiremockClient, deleteSaStub, "DELETE /iam/v2/service-accounts/sa-1jjv26", expectedCountOne)
 }
 
 func testAccCheckServiceAccountDestroy(s *terraform.State) error {
@@ -193,7 +193,7 @@ func testAccCheckServiceAccountDestroy(s *terraform.State) error {
 			continue
 		}
 		deletedServiceAccountId := rs.Primary.ID
-		req := c.iamClient.ServiceAccountsV2Api.GetV2ServiceAccount(c.iamApiContext(context.Background()), deletedServiceAccountId)
+		req := c.iamClient.ServiceAccountsIamV2Api.GetIamV2ServiceAccount(c.iamApiContext(context.Background()), deletedServiceAccountId)
 		deletedServiceAccount, response, err := req.Execute()
 		if response != nil && (response.StatusCode == http.StatusForbidden || response.StatusCode == http.StatusNotFound) {
 			// v2/service-accounts/{nonExistentSaId/deletedSaID} returns http.StatusForbidden instead of http.StatusNotFound

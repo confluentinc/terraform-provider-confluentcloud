@@ -55,7 +55,7 @@ func serviceAccountUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 		return diag.FromErr(fmt.Errorf("display_name field cannot be updated for a service account"))
 	}
 
-	updateReq := iam.NewV2ServiceAccountUpdate()
+	updateReq := iam.NewIamV2ServiceAccountUpdate()
 	if d.HasChange(paramDescription) {
 		description := extractDescription(d)
 		updateReq.SetDescription(description)
@@ -64,7 +64,7 @@ func serviceAccountUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 	}
 
 	c := meta.(*Client)
-	req := c.iamClient.ServiceAccountsV2Api.UpdateV2ServiceAccount(c.iamApiContext(ctx), d.Id()).V2ServiceAccountUpdate(*updateReq)
+	req := c.iamClient.ServiceAccountsIamV2Api.UpdateIamV2ServiceAccount(c.iamApiContext(ctx), d.Id()).IamV2ServiceAccountUpdate(*updateReq)
 
 	_, _, err := req.Execute()
 
@@ -81,7 +81,7 @@ func serviceAccountCreate(ctx context.Context, d *schema.ResourceData, meta inte
 	displayName := extractDisplayName(d)
 	description := extractDescription(d)
 
-	serviceAccount := iam.NewV2ServiceAccount()
+	serviceAccount := iam.NewIamV2ServiceAccount()
 	serviceAccount.SetDisplayName(displayName)
 	serviceAccount.SetDescription(description)
 
@@ -96,8 +96,8 @@ func serviceAccountCreate(ctx context.Context, d *schema.ResourceData, meta inte
 	return nil
 }
 
-func executeServiceAccountCreate(ctx context.Context, c *Client, serviceAccount *iam.V2ServiceAccount) (iam.V2ServiceAccount, *http.Response, error) {
-	req := c.iamClient.ServiceAccountsV2Api.CreateV2ServiceAccount(c.iamApiContext(ctx)).V2ServiceAccount(*serviceAccount)
+func executeServiceAccountCreate(ctx context.Context, c *Client, serviceAccount *iam.IamV2ServiceAccount) (iam.IamV2ServiceAccount, *http.Response, error) {
+	req := c.iamClient.ServiceAccountsIamV2Api.CreateIamV2ServiceAccount(c.iamApiContext(ctx)).IamV2ServiceAccount(*serviceAccount)
 
 	return req.Execute()
 }
@@ -105,7 +105,7 @@ func executeServiceAccountCreate(ctx context.Context, c *Client, serviceAccount 
 func serviceAccountDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*Client)
 
-	req := c.iamClient.ServiceAccountsV2Api.DeleteV2ServiceAccount(c.iamApiContext(ctx), d.Id())
+	req := c.iamClient.ServiceAccountsIamV2Api.DeleteIamV2ServiceAccount(c.iamApiContext(ctx), d.Id())
 	_, err := req.Execute()
 
 	if err != nil {
@@ -115,8 +115,8 @@ func serviceAccountDelete(ctx context.Context, d *schema.ResourceData, meta inte
 	return nil
 }
 
-func executeServiceAccountRead(ctx context.Context, c *Client, serviceAccountId string) (iam.V2ServiceAccount, *http.Response, error) {
-	req := c.iamClient.ServiceAccountsV2Api.GetV2ServiceAccount(c.iamApiContext(ctx), serviceAccountId)
+func executeServiceAccountRead(ctx context.Context, c *Client, serviceAccountId string) (iam.IamV2ServiceAccount, *http.Response, error) {
+	req := c.iamClient.ServiceAccountsIamV2Api.GetIamV2ServiceAccount(c.iamApiContext(ctx), serviceAccountId)
 	return req.Execute()
 }
 
