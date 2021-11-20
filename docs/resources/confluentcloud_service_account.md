@@ -35,7 +35,7 @@ In addition to the preceding arguments, the following attributes are exported:
 
 ## Import
 
-You can import an Environment by using Service Account ID, for example:
+You can import a Service Account by using Service Account ID, for example:
 
 ```
 $ terraform import confluentcloud_service_account.my_sa sa-abc123

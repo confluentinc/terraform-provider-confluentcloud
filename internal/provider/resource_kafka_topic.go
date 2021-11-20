@@ -38,19 +38,6 @@ const (
 	paramConfigs         = "config"
 )
 
-func extractClusterId(d *schema.ResourceData) string {
-	clusterId := d.Get(paramClusterId).(string)
-	return clusterId
-}
-func extractTopicName(d *schema.ResourceData) string {
-	topicName := d.Get(paramTopicName).(string)
-	return topicName
-}
-func extractPartitionsCount(d *schema.ResourceData) int32 {
-	partitionsCount := d.Get(paramPartitionsCount).(int)
-	return int32(partitionsCount)
-}
-
 func extractConfigs(d *schema.ResourceData) []kafkarestv3.CreateTopicRequestDataConfigs {
 	configs := d.Get(paramConfigs).(map[string]interface{})
 
@@ -69,38 +56,23 @@ func extractConfigs(d *schema.ResourceData) []kafkarestv3.CreateTopicRequestData
 	return configResult
 }
 
-func extractHttpEndpoint(d *schema.ResourceData) string {
-	httpEndpoint := d.Get(paramHttpEndpoint).(string)
-	return httpEndpoint
-}
-
 func extractClusterApiKeyAndApiSecret(d *schema.ResourceData) (string, string, error) {
-	credentialsDataList := d.Get(paramCredentials).(*schema.Set).List()
-	if credentialsDataList == nil {
-		return "", "", fmt.Errorf("expected a single %s block but found nil instead", paramCredentials)
+	clusterApiKey, err := extractStringAttributeFromListBlockOfSizeOne(d, paramCredentials, paramKey)
+	if err != nil {
+		return "", "", err
 	}
-	if len(credentialsDataList) != 1 {
-		return "", "", fmt.Errorf("expected a single %s block but found %d blocks instead", paramCredentials, len(credentialsDataList))
+	clusterApiSecret, err := extractStringAttributeFromListBlockOfSizeOne(d, paramCredentials, paramSecret)
+	if err != nil {
+		return "", "", err
 	}
-	credentialsMap, ok := credentialsDataList[0].(map[string]interface{})
-	if !ok {
-		return "", "", fmt.Errorf("could not find cast %s block to map[string]interface{}", paramCredentials)
-	}
-	clusterApiKey, foundClusterApiKey := credentialsMap[paramKey]
-	clusterApiSecret, foundClusterApiSecret := credentialsMap[paramSecret]
-	if !foundClusterApiKey {
-		return "", "", fmt.Errorf("could not find Kafka API Key for Confluent Cloud: there is no %s in %s block", paramKey, paramCredentials)
-	} else if !foundClusterApiSecret {
-		return "", "", fmt.Errorf("could not find Kafka API Secret for Confluent Cloud: there is no %s in %s block", paramSecret, paramCredentials)
-	} else {
-		return clusterApiKey.(string), clusterApiSecret.(string), nil
-	}
+	return clusterApiKey, clusterApiSecret, nil
 }
 
 func kafkaTopicResource() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: kafkaTopicCreate,
 		ReadContext:   kafkaTopicRead,
+		UpdateContext: kafkaTopicUpdate,
 		DeleteContext: kafkaTopicDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: kafkaTopicImport,
@@ -142,25 +114,24 @@ func kafkaTopicResource() *schema.Resource {
 }
 
 func kafkaTopicCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	c := meta.(*Client)
-	httpEndpoint := extractHttpEndpoint(d)
-	updateKafkaRestClient(c, httpEndpoint)
-
-	clusterId := extractClusterId(d)
+	httpEndpoint := d.Get(paramHttpEndpoint).(string)
+	clusterId := d.Get(paramClusterId).(string)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	topicName := extractTopicName(d)
+	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
+	topicName := d.Get(paramTopicName).(string)
 
 	kafkaTopicRequestData := kafkarestv3.CreateTopicRequestData{
 		TopicName:       topicName,
-		PartitionsCount: extractPartitionsCount(d),
+		PartitionsCount: int32(d.Get(paramPartitionsCount).(int)),
 		Configs:         extractConfigs(d),
 	}
 
-	// both replication_factor and partitions_count would be incorrectly set to 0 in a response so we don't use its data
-	_, resp, err := executeKafkaTopicCreate(c.kafkaRestApiContext(ctx, clusterApiKey, clusterApiSecret), c, clusterId, kafkaTopicRequestData)
+	// both replication_factor and partitions_count would be incorrectly set to 0 in a response
+	// so we will ignore those properties in a response
+	_, resp, err := executeKafkaTopicCreate(ctx, kafkaRestClient, kafkaTopicRequestData)
 
 	if err != nil {
 		log.Printf("[ERROR] Kafka topic create failed %v, %v, %s", kafkaTopicRequestData, resp, err)
@@ -170,34 +141,32 @@ func kafkaTopicCreate(ctx context.Context, d *schema.ResourceData, meta interfac
 	// issue another read request to fetch the real data
 	kafkaTopicRead(ctx, d, meta)
 
-	kafkaTopicId := createKafkaTopicId(clusterId, topicName)
+	kafkaTopicId := createKafkaTopicId(kafkaRestClient.clusterId, topicName)
 	d.SetId(kafkaTopicId)
 	log.Printf("[DEBUG] Created Kafka topic %s", kafkaTopicId)
 	return nil
 }
 
-func executeKafkaTopicCreate(ctx context.Context, c *Client, clusterId string, requestData kafkarestv3.CreateTopicRequestData) (kafkarestv3.TopicData, *http.Response, error) {
+func executeKafkaTopicCreate(ctx context.Context, c *KafkaRestClient, requestData kafkarestv3.CreateTopicRequestData) (kafkarestv3.TopicData, *http.Response, error) {
 	opts := &kafkarestv3.CreateKafkaV3TopicOpts{
 		CreateTopicRequestData: optional.NewInterface(requestData),
 	}
-	return c.kafkaRestClient.TopicV3Api.CreateKafkaV3Topic(ctx, clusterId, opts)
+	return c.apiClient.TopicV3Api.CreateKafkaV3Topic(c.apiContext(ctx), c.clusterId, opts)
 }
 
 func kafkaTopicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Printf("[INFO] Kafka topic delete for %s", d.Id())
 
-	c := meta.(*Client)
-	httpEndpoint := extractHttpEndpoint(d)
-	updateKafkaRestClient(c, httpEndpoint)
-
-	clusterId := extractClusterId(d)
-	topicName := extractTopicName(d)
+	httpEndpoint := d.Get(paramHttpEndpoint).(string)
+	clusterId := d.Get(paramClusterId).(string)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
+	topicName := d.Get(paramTopicName).(string)
 
-	_, err = c.kafkaRestClient.TopicV3Api.DeleteKafkaV3Topic(c.kafkaRestApiContext(ctx, clusterApiKey, clusterApiSecret), clusterId, topicName)
+	_, err = kafkaRestClient.apiClient.TopicV3Api.DeleteKafkaV3Topic(kafkaRestClient.apiContext(ctx), kafkaRestClient.clusterId, topicName)
 
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error deleting kafka topic (%s), err: %s", d.Id(), err))
@@ -209,15 +178,16 @@ func kafkaTopicDelete(ctx context.Context, d *schema.ResourceData, meta interfac
 func kafkaTopicRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Printf("[INFO] Kafka topic read for %s", d.Id())
 
-	clusterId := extractClusterId(d)
-	topicName := extractTopicName(d)
+	httpEndpoint := d.Get(paramHttpEndpoint).(string)
+	clusterId := d.Get(paramClusterId).(string)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	httpEndpoint := extractHttpEndpoint(d)
+	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
+	topicName := d.Get(paramTopicName).(string)
 
-	_, err = readAndSetTopicResourceConfigurationArguments(ctx, d, meta, clusterId, topicName, clusterApiKey, clusterApiSecret, httpEndpoint)
+	_, err = readAndSetTopicResourceConfigurationArguments(ctx, d, kafkaRestClient, topicName)
 
 	return diag.FromErr(err)
 }
@@ -226,19 +196,9 @@ func createKafkaTopicId(clusterId, topicName string) string {
 	return fmt.Sprintf("%s/%s", clusterId, topicName)
 }
 
-func updateKafkaRestClient(c *Client, httpEndpoint string) {
-	if c.kafkaRestClient.GetConfig().BasePath == httpEndpoint {
-		return
-	}
-	kafkaRestConfig := kafkarestv3.NewConfiguration()
-	kafkaRestConfig.BasePath = httpEndpoint
-	c.kafkaRestClient = kafkarestv3.NewAPIClient(kafkaRestConfig)
-}
-
 func credentialsSchema() *schema.Schema {
 	return &schema.Schema{
-		Type:        schema.TypeSet,
-		ForceNew:    true,
+		Type:        schema.TypeList,
 		Required:    true,
 		Description: "The Cluster API Credentials.",
 		MinItems:    1,
@@ -291,16 +251,13 @@ func kafkaTopicImport(ctx context.Context, d *schema.ResourceData, meta interfac
 	clusterId := parts[0]
 	topicName := parts[1]
 
-	return readAndSetTopicResourceConfigurationArguments(ctx, d, meta, clusterId, topicName, kafkaImportEnvVars.kafkaApiKey, kafkaImportEnvVars.kafkaApiSecret, kafkaImportEnvVars.kafkaHttpEndpoint)
+	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(kafkaImportEnvVars.kafkaHttpEndpoint, clusterId, kafkaImportEnvVars.kafkaApiKey, kafkaImportEnvVars.kafkaApiSecret)
+
+	return readAndSetTopicResourceConfigurationArguments(ctx, d, kafkaRestClient, topicName)
 }
 
-func readAndSetTopicResourceConfigurationArguments(ctx context.Context, d *schema.ResourceData, meta interface{}, clusterId, topicName, kafkaApiKey, kafkaApiSecret, httpEndpoint string) ([]*schema.ResourceData, error) {
-	c := meta.(*Client)
-	updateKafkaRestClient(c, httpEndpoint)
-
-	ctx = c.kafkaRestApiContext(ctx, kafkaApiKey, kafkaApiSecret)
-
-	kafkaTopic, resp, err := c.kafkaRestClient.TopicV3Api.GetKafkaV3Topic(ctx, clusterId, topicName)
+func readAndSetTopicResourceConfigurationArguments(ctx context.Context, d *schema.ResourceData, c *KafkaRestClient, topicName string) ([]*schema.ResourceData, error) {
+	kafkaTopic, resp, err := c.apiClient.TopicV3Api.GetKafkaV3Topic(c.apiContext(ctx), c.clusterId, topicName)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		// https://learn.hashicorp.com/tutorials/terraform/provider-setup?in=terraform/providers
 		// If the resource isn't available, set the ID to an empty string so Terraform "destroys" the resource in state.
@@ -320,7 +277,7 @@ func readAndSetTopicResourceConfigurationArguments(ctx context.Context, d *schem
 		err = d.Set(paramPartitionsCount, kafkaTopic.PartitionsCount)
 	}
 	if err == nil {
-		topicConfigList, resp, err := c.kafkaRestClient.ConfigsV3Api.ListKafkaV3TopicConfigs(ctx, clusterId, topicName)
+		topicConfigList, resp, err := c.apiClient.ConfigsV3Api.ListKafkaV3TopicConfigs(c.apiContext(ctx), c.clusterId, topicName)
 		if err != nil {
 			log.Printf("[ERROR] Kafka topic config get failed for id %s, %v, %s", d.Id(), resp, err)
 			return nil, err
@@ -340,12 +297,19 @@ func readAndSetTopicResourceConfigurationArguments(ctx context.Context, d *schem
 	}
 
 	if err == nil {
-		err = setKafkaCredentials(kafkaApiKey, kafkaApiSecret, d)
+		err = setKafkaCredentials(c.clusterApiKey, c.clusterApiSecret, d)
 	}
 	if err == nil {
-		err = d.Set(paramHttpEndpoint, httpEndpoint)
+		err = d.Set(paramHttpEndpoint, c.httpEndpoint)
 	}
 	return []*schema.ResourceData{d}, err
+}
+
+func kafkaTopicUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	if d.HasChangesExcept(paramCredentials) {
+		return diag.FromErr(fmt.Errorf("only %s block can be updated for a Kafka topic", paramCredentials))
+	}
+	return nil
 }
 
 func setKafkaCredentials(kafkaApiKey, kafkaApiSecret string, d *schema.ResourceData) error {

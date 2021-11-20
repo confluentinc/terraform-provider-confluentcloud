@@ -20,7 +20,9 @@ import (
 	cmk "github.com/confluentinc/ccloud-sdk-go-v2/cmk/v2"
 	iam "github.com/confluentinc/ccloud-sdk-go-v2/iam/v2"
 	kafkarestv3 "github.com/confluentinc/ccloud-sdk-go-v2/kafkarest/v3"
+	mds "github.com/confluentinc/ccloud-sdk-go-v2/mds/v2"
 	org "github.com/confluentinc/ccloud-sdk-go-v2/org/v2"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"os"
 	"time"
@@ -48,9 +50,9 @@ func (c *Client) iamApiContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (c *Client) orgApiContext(ctx context.Context) context.Context {
+func (c *Client) mdsApiContext(ctx context.Context) context.Context {
 	if c.apiKey != "" && c.apiSecret != "" {
-		return context.WithValue(context.Background(), org.ContextBasicAuth, org.BasicAuth{
+		return context.WithValue(context.Background(), mds.ContextBasicAuth, mds.BasicAuth{
 			UserName: c.apiKey,
 			Password: c.apiSecret,
 		})
@@ -59,14 +61,14 @@ func (c *Client) orgApiContext(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (c *Client) kafkaRestApiContext(ctx context.Context, clusterApiKey, clusterApiSecret string) context.Context {
-	if clusterApiKey != "" && clusterApiSecret != "" {
-		return context.WithValue(context.Background(), kafkarestv3.ContextBasicAuth, kafkarestv3.BasicAuth{
-			UserName: clusterApiKey,
-			Password: clusterApiSecret,
+func (c *Client) orgApiContext(ctx context.Context) context.Context {
+	if c.apiKey != "" && c.apiSecret != "" {
+		return context.WithValue(context.Background(), org.ContextBasicAuth, org.BasicAuth{
+			UserName: c.apiKey,
+			Password: c.apiSecret,
 		})
 	}
-	log.Printf("[WARN] Could not find cluster credentials for Confluent Cloud")
+	log.Printf("[WARN] Could not find credentials for Confluent Cloud")
 	return ctx
 }
 
@@ -197,4 +199,49 @@ func checkEnvironmentVariablesForKafkaImportAreSet() (KafkaImportEnvVars, error)
 		kafkaApiSecret:    kafkaApiSecret,
 		kafkaHttpEndpoint: kafkaHttpEndpoint,
 	}, nil
+}
+
+type KafkaRestClient struct {
+	apiClient        *kafkarestv3.APIClient
+	clusterId        string
+	clusterApiKey    string
+	clusterApiSecret string
+	httpEndpoint     string
+}
+
+func (c *KafkaRestClient) apiContext(ctx context.Context) context.Context {
+	if c.clusterApiKey != "" && c.clusterApiSecret != "" {
+		return context.WithValue(context.Background(), kafkarestv3.ContextBasicAuth, kafkarestv3.BasicAuth{
+			UserName: c.clusterApiKey,
+			Password: c.clusterApiSecret,
+		})
+	}
+	log.Printf("[WARN] Could not find cluster credentials for Confluent Cloud for clusterId=%s", c.clusterId)
+	return ctx
+}
+
+type KafkaRestClientFactory struct {
+	userAgent string
+}
+
+func (f KafkaRestClientFactory) CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret string) *KafkaRestClient {
+	config := kafkarestv3.NewConfiguration()
+	config.BasePath = httpEndpoint
+	config.UserAgent = f.userAgent
+	return &KafkaRestClient{
+		apiClient:        kafkarestv3.NewAPIClient(config),
+		clusterId:        clusterId,
+		clusterApiKey:    clusterApiKey,
+		clusterApiSecret: clusterApiSecret,
+		httpEndpoint:     httpEndpoint,
+	}
+}
+
+func extractStringAttributeFromListBlockOfSizeOne(d *schema.ResourceData, blockName, attributeName string) (string, error) {
+	// d.Get() will return "" if the key is not present
+	value := d.Get(fmt.Sprintf("%s.0.%s", blockName, attributeName)).(string)
+	if value == "" {
+		return "", fmt.Errorf("could not find %s attribute in %s block", attributeName, blockName)
+	}
+	return value, nil
 }

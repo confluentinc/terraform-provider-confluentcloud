@@ -68,6 +68,8 @@ The following arguments are supported:
 
 !> **Warning:** Terraform doesn't encrypt the sensitive `credentials` value of the `confluentcloud_kafka_acl` resource, so you must keep your state file secure to avoid exposing it. Refer to the [Terraform documentation](https://www.terraform.io/docs/language/state/sensitive-data.html) to learn more about securing your state file.
 
+-> **Note:** To rotate a Kafka API key, create a new Kafka API key, update `credentials` block in all configuration files to use the new Kafka API key, run `terraform apply`, and remove the old Kafka API key.
+
 ## Attributes Reference
 
 In addition to the preceding arguments, the following attributes are exported:

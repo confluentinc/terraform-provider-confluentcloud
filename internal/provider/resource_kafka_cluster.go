@@ -118,7 +118,7 @@ func kafkaResource() *schema.Resource {
 func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*Client)
 
-	displayName := extractDisplayName(d)
+	displayName := d.Get(paramDisplayName).(string)
 	environmentId, err := validEnvironmentId(d)
 	if err != nil {
 		return diag.FromErr(err)
@@ -189,7 +189,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 				return diag.FromErr(fmt.Errorf("decreasing the number of CKUs by more than 1 is currently not supported"))
 			}
 		}
-		availability := extractAvailability(d)
+		availability := d.Get(paramAvailability).(string)
 		err = ckuCheck(cku, availability)
 		if err != nil {
 			return diag.FromErr(err)
@@ -241,10 +241,10 @@ func executeKafkaCreate(ctx context.Context, c *Client, cluster *cmk.CmkV2Cluste
 func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*Client)
 
-	displayName := extractDisplayName(d)
-	availability := extractAvailability(d)
-	cloud := extractCloud(d)
-	region := extractRegion(d)
+	displayName := d.Get(paramDisplayName).(string)
+	availability := d.Get(paramAvailability).(string)
+	cloud := d.Get(paramCloud).(string)
+	region := d.Get(paramRegion).(string)
 	clusterType := extractClusterType(d)
 	environmentId, err := validEnvironmentId(d)
 	if err != nil {
@@ -364,27 +364,12 @@ func kafkaCkuUpdated(ctx context.Context, c *Client, environmentId string, clust
 		// spec.cku is the user’s desired # of CKUs, and status.cku is the current # of CKUs in effect
 		// because the change is still pending, for example
 		// Use desiredCku on the off chance that API will not work as expected (i.e., spec.cku = status.cku during expansion).
-		// https://confluentinc.atlassian.net/browse/CAPAC-293
+		// CAPAC-293
 		if cluster.Status.GetCku() == cluster.Spec.Config.CmkV2Dedicated.Cku && cluster.Status.GetCku() == desiredCku {
 			return cluster, stateDone, nil
 		}
 		return cluster, stateInProgress, nil
 	}
-}
-
-func extractAvailability(d *schema.ResourceData) string {
-	availability := d.Get(paramAvailability).(string)
-	return availability
-}
-
-func extractRegion(d *schema.ResourceData) string {
-	region := d.Get(paramRegion).(string)
-	return region
-}
-
-func extractCloud(d *schema.ResourceData) string {
-	cloud := d.Get(paramCloud).(string)
-	return cloud
 }
 
 func extractClusterType(d *schema.ResourceData) string {
@@ -518,8 +503,7 @@ func basicClusterSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeList,
 		Optional: true,
-		MinItems: 0,
-		MaxItems: 1,
+		MaxItems: 0,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{},
 		},
@@ -531,8 +515,7 @@ func standardClusterSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeList,
 		Optional: true,
-		MinItems: 0,
-		MaxItems: 1,
+		MaxItems: 0,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{},
 		},
@@ -544,7 +527,6 @@ func dedicatedClusterSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeList,
 		Optional: true,
-		MinItems: 0,
 		MaxItems: 1,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{

@@ -51,22 +51,16 @@ func serviceAccountResource() *schema.Resource {
 }
 
 func serviceAccountUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	if d.HasChange(paramDisplayName) {
-		return diag.FromErr(fmt.Errorf("display_name field cannot be updated for a service account"))
+	if d.HasChangeExcept(paramDescription) {
+		return diag.FromErr(fmt.Errorf(fmt.Sprintf("only %s field can be updated for a service account", paramDescription)))
 	}
 
-	updateReq := iam.NewIamV2ServiceAccountUpdate()
-	if d.HasChange(paramDescription) {
-		description := extractDescription(d)
-		updateReq.SetDescription(description)
-	} else {
-		return nil
-	}
+	updatedServiceAccount := iam.NewIamV2ServiceAccountUpdate()
+	updatedDescription := d.Get(paramDescription).(string)
+	updatedServiceAccount.SetDescription(updatedDescription)
 
 	c := meta.(*Client)
-	req := c.iamClient.ServiceAccountsIamV2Api.UpdateIamV2ServiceAccount(c.iamApiContext(ctx), d.Id()).IamV2ServiceAccountUpdate(*updateReq)
-
-	_, _, err := req.Execute()
+	_, _, err := c.iamClient.ServiceAccountsIamV2Api.UpdateIamV2ServiceAccount(c.iamApiContext(ctx), d.Id()).IamV2ServiceAccountUpdate(*updatedServiceAccount).Execute()
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -78,8 +72,8 @@ func serviceAccountUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 func serviceAccountCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*Client)
 
-	displayName := extractDisplayName(d)
-	description := extractDescription(d)
+	displayName := d.Get(paramDisplayName).(string)
+	description := d.Get(paramDescription).(string)
 
 	serviceAccount := iam.NewIamV2ServiceAccount()
 	serviceAccount.SetDisplayName(displayName)

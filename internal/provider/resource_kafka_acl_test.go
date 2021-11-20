@@ -49,6 +49,9 @@ var fullAclResourceLabel = fmt.Sprintf("confluentcloud_kafka_acl.%s", aclResourc
 var createKafkaAclPath = fmt.Sprintf("/kafka/v3/clusters/%s/acls", clusterId)
 var readKafkaAclPath = fmt.Sprintf("/kafka/v3/clusters/%s/acls?host=%s&operation=%s&pattern_type=%s&permission=%s&principal=%s&resource_name=%s&resource_type=%s", clusterId, aclHost, aclOperation, aclPatternType, aclPermission, aclPrincipal, aclResourceName, aclResourceType)
 
+// TODO: APIF-1990
+var mockAclTestServerUrl = ""
+
 func TestAccAcls(t *testing.T) {
 	containerPort := "8080"
 	containerPortTcp := fmt.Sprintf("%s/tcp", containerPort)
@@ -75,9 +78,9 @@ func TestAccAcls(t *testing.T) {
 	wiremockHttpMappedPort, err := wiremockContainer.MappedPort(ctx, nat.Port(containerPort))
 	require.NoError(t, err)
 
-	mockServerUrl := fmt.Sprintf("http://%s:%s", host, wiremockHttpMappedPort.Port())
+	mockAclTestServerUrl = fmt.Sprintf("http://%s:%s", host, wiremockHttpMappedPort.Port())
 	confluentCloudBaseUrl := ""
-	wiremockClient := wiremock.NewClient(mockServerUrl)
+	wiremockClient := wiremock.NewClient(mockAclTestServerUrl)
 	// nolint:errcheck
 	defer wiremockClient.Reset()
 
@@ -149,7 +152,7 @@ func TestAccAcls(t *testing.T) {
 	// Set fake values for secrets since those are required for importing
 	_ = os.Setenv("KAFKA_API_KEY", kafkaApiKey)
 	_ = os.Setenv("KAFKA_API_SECRET", kafkaApiSecret)
-	_ = os.Setenv("KAFKA_HTTP_ENDPOINT", mockServerUrl)
+	_ = os.Setenv("KAFKA_HTTP_ENDPOINT", mockAclTestServerUrl)
 	defer func() {
 		_ = os.Unsetenv("KAFKA_API_KEY")
 		_ = os.Unsetenv("KAFKA_API_SECRET")
@@ -164,7 +167,7 @@ func TestAccAcls(t *testing.T) {
 		// https://www.terraform.io/docs/extend/best-practices/testing.html#built-in-patterns
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckAclConfig(confluentCloudBaseUrl, mockServerUrl),
+				Config: testAccCheckAclConfig(confluentCloudBaseUrl, mockAclTestServerUrl),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAclExists(fullAclResourceLabel),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "kafka_cluster", clusterId),
@@ -194,14 +197,14 @@ func TestAccAcls(t *testing.T) {
 }
 
 func testAccCheckAclDestroy(s *terraform.State) error {
-	c := testAccProvider.Meta().(*Client)
+	c := testAccProvider.Meta().(*Client).kafkaRestClientFactory.CreateKafkaRestClient(mockAclTestServerUrl, clusterId, kafkaApiKey, kafkaApiSecret)
 	// Loop through the resources in state, verifying each ACL is destroyed
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "confluentcloud_kafka_acl" {
 			continue
 		}
 		deletedAclId := rs.Primary.ID
-		aclList, _, err := c.kafkaRestClient.ACLV3Api.GetKafkaV3Acls(c.kafkaRestApiContext(context.Background(), kafkaApiKey, kafkaApiSecret), clusterId, nil)
+		aclList, _, err := c.apiClient.ACLV3Api.GetKafkaV3Acls(c.apiContext(context.Background()), clusterId, nil)
 
 		if len(aclList.Data) == 0 {
 			return nil

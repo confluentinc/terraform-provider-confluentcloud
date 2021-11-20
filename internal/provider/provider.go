@@ -19,7 +19,7 @@ import (
 	"fmt"
 	cmk "github.com/confluentinc/ccloud-sdk-go-v2/cmk/v2"
 	iam "github.com/confluentinc/ccloud-sdk-go-v2/iam/v2"
-	kafkarestv3 "github.com/confluentinc/ccloud-sdk-go-v2/kafkarest/v3"
+	mds "github.com/confluentinc/ccloud-sdk-go-v2/mds/v2"
 	org "github.com/confluentinc/ccloud-sdk-go-v2/org/v2"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -45,14 +45,15 @@ const (
 )
 
 type Client struct {
-	iamClient       *iam.APIClient
-	cmkClient       *cmk.APIClient
-	orgClient       *org.APIClient
-	kafkaRestClient *kafkarestv3.APIClient
-	userAgent       string
-	apiKey          string
-	apiSecret       string
-	waitUntil       string
+	iamClient              *iam.APIClient
+	cmkClient              *cmk.APIClient
+	orgClient              *org.APIClient
+	kafkaRestClientFactory *KafkaRestClientFactory
+	mdsClient              *mds.APIClient
+	userAgent              string
+	apiKey                 string
+	apiSecret              string
+	waitUntil              string
 }
 
 // Customize configs for terraform-plugin-docs
@@ -113,6 +114,7 @@ func New(version string) func() *schema.Provider {
 				"confluentcloud_service_account": serviceAccountResource(),
 				"confluentcloud_kafka_topic":     kafkaTopicResource(),
 				"confluentcloud_kafka_acl":       kafkaAclResource(),
+				"confluentcloud_role_binding":    roleBindingResource(),
 			},
 		}
 
@@ -122,16 +124,6 @@ func New(version string) func() *schema.Provider {
 
 		return provider
 	}
-}
-
-func extractDisplayName(d *schema.ResourceData) string {
-	displayName := d.Get(paramDisplayName).(string)
-	return displayName
-}
-
-func extractDescription(d *schema.ResourceData) string {
-	description := d.Get(paramDescription).(string)
-	return description
 }
 
 // https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737
@@ -194,27 +186,29 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 
 	cmkCfg := cmk.NewConfiguration()
 	iamCfg := iam.NewConfiguration()
+	mdsCfg := mds.NewConfiguration()
 	orgCfg := org.NewConfiguration()
-	kafkaRestCfg := kafkarestv3.NewConfiguration()
 
 	cmkCfg.Servers[0].URL = endpoint
 	iamCfg.Servers[0].URL = endpoint
+	mdsCfg.Servers[0].URL = endpoint
 	orgCfg.Servers[0].URL = endpoint
 
 	cmkCfg.UserAgent = userAgent
 	iamCfg.UserAgent = userAgent
+	mdsCfg.UserAgent = userAgent
 	orgCfg.UserAgent = userAgent
-	kafkaRestCfg.UserAgent = userAgent
 
 	client := Client{
-		cmkClient:       cmk.NewAPIClient(cmkCfg),
-		iamClient:       iam.NewAPIClient(iamCfg),
-		orgClient:       org.NewAPIClient(orgCfg),
-		kafkaRestClient: kafkarestv3.NewAPIClient(kafkaRestCfg),
-		userAgent:       userAgent,
-		apiKey:          apiKey,
-		apiSecret:       apiSecret,
-		waitUntil:       waitUntil,
+		cmkClient:              cmk.NewAPIClient(cmkCfg),
+		iamClient:              iam.NewAPIClient(iamCfg),
+		orgClient:              org.NewAPIClient(orgCfg),
+		kafkaRestClientFactory: &KafkaRestClientFactory{userAgent: userAgent},
+		mdsClient:              mds.NewAPIClient(mdsCfg),
+		userAgent:              userAgent,
+		apiKey:                 apiKey,
+		apiSecret:              apiSecret,
+		waitUntil:              waitUntil,
 	}
 
 	return &client, nil

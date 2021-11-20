@@ -19,10 +19,12 @@ In this guide, you will:
 
 ## Prerequisites
 
+-> **Note:** The Confluent Cloud Terraform provider is available in an **Preview Program** for early adopters. Preview features are introduced to gather customer feedback. This feature should be used only for evaluation and non-production testing purposes or to provide feedback to Confluent, particularly as it becomes more widely available in follow-on editions.  
+**Preview Program** features are intended for evaluation use in development and testing environments only, and not for production use. The warranty, SLA, and Support Services provisions of your agreement with Confluent do not apply to Preview Program features. Preview Program features are considered to be a Proof of Concept as defined in the Confluent Cloud Terms of Service. Confluent may discontinue providing preview releases of the Preview Program features at any time in Confluent’s sole discretion.
+
+!> **Warning:** Early Access versions of the Confluent Cloud Terraform Provider (versions 0.1.0 and 0.2.0) are deprecated.
+
 - A Confluent Cloud account. **[Sign up here](https://www.confluent.io/get-started?product=cloud)**
-- To run this example, you must be enrolled into the Confluent Cloud API v2 API Early Access program. To enroll,
-  [email Confluent support](mailto:cflt-tf-access@confluent.io?subject=Request%20to%20join%20the%20Terraform%20Early%20Access%20Program&body=I%E2%80%99d%20like%20to%20join%20the%20Confluent%20Cloud%20API%20Early%20Access%20for%20v2%20to%20provide%20early%20feedback%21%20My%20Cloud%20Organization%20ID%20is%20%3Cretrieve%20from%20https%3A//confluent.cloud/settings/billing/payment%3E.). If you're not
-  enrolled, you'll receive `403` errors when you apply Terraform plans.
 
 ## Get a Confluent Cloud API Key
 
@@ -75,7 +77,7 @@ Kafka cluster.
       required_providers {
         confluentcloud = {
           source  = "confluentinc/confluentcloud"
-          version = "0.2.0"
+          version = "0.3.0"
         }
       }
     }

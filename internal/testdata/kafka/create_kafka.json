@@ -4,7 +4,7 @@
   "kind": "Cluster",
   "metadata": {
     "created_at": "2021-08-24T14:37:56.09422Z",
-    "resource_name": "crn://confluent.cloud/organization=1322/environment=env-1jrymj/kafka=lkc-19ynpv",
+    "resource_name": "crn://confluent.cloud/organization=1322/environment=env-1jrymj/cloud-cluster=lkc-19ynpv/kafka=lkc-19ynpv",
     "self": "https://api.confluent.cloud/cmk/v2/clusters/lkc-19ynpv",
     "updated_at": "2021-08-24T14:37:56.09422Z"
   },

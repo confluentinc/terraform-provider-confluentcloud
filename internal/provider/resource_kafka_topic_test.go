@@ -54,6 +54,9 @@ var createKafkaTopicPath = fmt.Sprintf("/kafka/v3/clusters/%s/topics", clusterId
 var readKafkaTopicPath = fmt.Sprintf("/kafka/v3/clusters/%s/topics/%s", clusterId, topicName)
 var readKafkaTopicConfigPath = fmt.Sprintf("/kafka/v3/clusters/%s/topics/%s/configs", clusterId, topicName)
 
+// TODO: APIF-1990
+var mockTopicTestServerUrl = ""
+
 func TestAccTopic(t *testing.T) {
 	containerPort := "8080"
 	containerPortTcp := fmt.Sprintf("%s/tcp", containerPort)
@@ -80,9 +83,9 @@ func TestAccTopic(t *testing.T) {
 	wiremockHttpMappedPort, err := wiremockContainer.MappedPort(ctx, nat.Port(containerPort))
 	require.NoError(t, err)
 
-	mockServerUrl := fmt.Sprintf("http://%s:%s", host, wiremockHttpMappedPort.Port())
+	mockTopicTestServerUrl = fmt.Sprintf("http://%s:%s", host, wiremockHttpMappedPort.Port())
 	confluentCloudBaseUrl := ""
-	wiremockClient := wiremock.NewClient(mockServerUrl)
+	wiremockClient := wiremock.NewClient(mockTopicTestServerUrl)
 	// nolint:errcheck
 	defer wiremockClient.Reset()
 
@@ -151,7 +154,7 @@ func TestAccTopic(t *testing.T) {
 	// Set fake values for secrets since those are required for importing
 	_ = os.Setenv("KAFKA_API_KEY", kafkaApiKey)
 	_ = os.Setenv("KAFKA_API_SECRET", kafkaApiSecret)
-	_ = os.Setenv("KAFKA_HTTP_ENDPOINT", mockServerUrl)
+	_ = os.Setenv("KAFKA_HTTP_ENDPOINT", mockTopicTestServerUrl)
 	defer func() {
 		_ = os.Unsetenv("KAFKA_API_KEY")
 		_ = os.Unsetenv("KAFKA_API_SECRET")
@@ -166,7 +169,7 @@ func TestAccTopic(t *testing.T) {
 		// https://www.terraform.io/docs/extend/best-practices/testing.html#built-in-patterns
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckTopicConfig(confluentCloudBaseUrl, mockServerUrl),
+				Config: testAccCheckTopicConfig(confluentCloudBaseUrl, mockTopicTestServerUrl),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckTopicExists(fullTopicResourceLabel),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "kafka_cluster", clusterId),
@@ -174,7 +177,7 @@ func TestAccTopic(t *testing.T) {
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "%", numberOfResourceAttributes),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "topic_name", topicName),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "partitions_count", strconv.Itoa(partitionCount)),
-					resource.TestCheckResourceAttr(fullTopicResourceLabel, "http_endpoint", mockServerUrl),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "http_endpoint", mockTopicTestServerUrl),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "config.%", "2"),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "config.max.message.bytes", "12345"),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "config.retention.ms", "6789"),
@@ -198,14 +201,14 @@ func TestAccTopic(t *testing.T) {
 }
 
 func testAccCheckTopicDestroy(s *terraform.State) error {
-	c := testAccProvider.Meta().(*Client)
+	c := testAccProvider.Meta().(*Client).kafkaRestClientFactory.CreateKafkaRestClient(mockTopicTestServerUrl, clusterId, kafkaApiKey, kafkaApiSecret)
 	// Loop through the resources in state, verifying each Kafka topic is destroyed
 	for _, rs := range s.RootModule().Resources {
 		if rs.Type != "confluentcloud_kafka_topic" {
 			continue
 		}
 		deletedTopicId := rs.Primary.ID
-		_, response, err := c.kafkaRestClient.TopicV3Api.GetKafkaV3Topic(c.kafkaRestApiContext(context.Background(), kafkaApiKey, kafkaApiSecret), clusterId, topicName)
+		_, response, err := c.apiClient.TopicV3Api.GetKafkaV3Topic(c.apiContext(context.Background()), clusterId, topicName)
 		if response != nil && (response.StatusCode == http.StatusForbidden || response.StatusCode == http.StatusNotFound) {
 			return nil
 		} else if err == nil && deletedTopicId != "" {

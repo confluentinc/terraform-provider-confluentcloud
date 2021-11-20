@@ -1,0 +1,4 @@
+{
+  "error_code": 40301,
+  "message": "Either unauthorized to access role binding or role binding does not exist"
+}

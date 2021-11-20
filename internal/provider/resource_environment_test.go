@@ -73,7 +73,7 @@ func TestAccEnvironment(t *testing.T) {
 	// nolint:errcheck
 	defer wiremockClient.ResetAllScenarios()
 	createEnvResponse, _ := ioutil.ReadFile("../testdata/environment/create_env.json")
-	createEnvStub := wiremock.Post(wiremock.URLPathEqualTo("/v2/environments")).
+	createEnvStub := wiremock.Post(wiremock.URLPathEqualTo("/org/v2/environments")).
 		InScenario(envScenarioName).
 		WhenScenarioStateIs(wiremock.ScenarioStateStarted).
 		WillSetStateTo(scenarioStateEnvHasBeenCreated).
@@ -85,7 +85,7 @@ func TestAccEnvironment(t *testing.T) {
 	_ = wiremockClient.StubFor(createEnvStub)
 
 	readCreatedEnvResponse, _ := ioutil.ReadFile("../testdata/environment/read_created_env.json")
-	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/v2/environments/env-q2opmd")).
+	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/org/v2/environments/env-q2opmd")).
 		InScenario(envScenarioName).
 		WhenScenarioStateIs(scenarioStateEnvHasBeenCreated).
 		WillReturn(
@@ -95,7 +95,7 @@ func TestAccEnvironment(t *testing.T) {
 		))
 
 	readUpdatedEnvResponse, _ := ioutil.ReadFile("../testdata/environment/read_updated_env.json")
-	patchEnvStub := wiremock.Patch(wiremock.URLPathEqualTo("/v2/environments/env-q2opmd")).
+	patchEnvStub := wiremock.Patch(wiremock.URLPathEqualTo("/org/v2/environments/env-q2opmd")).
 		InScenario(envScenarioName).
 		WhenScenarioStateIs(scenarioStateEnvHasBeenCreated).
 		WillSetStateTo(scenarioStateEnvNameHasBeenUpdated).
@@ -106,7 +106,7 @@ func TestAccEnvironment(t *testing.T) {
 		)
 	_ = wiremockClient.StubFor(patchEnvStub)
 
-	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/v2/environments/env-q2opmd")).
+	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/org/v2/environments/env-q2opmd")).
 		InScenario(envScenarioName).
 		WhenScenarioStateIs(scenarioStateEnvNameHasBeenUpdated).
 		WillReturn(
@@ -116,7 +116,7 @@ func TestAccEnvironment(t *testing.T) {
 		))
 
 	readDeletedEnvResponse, _ := ioutil.ReadFile("../testdata/environment/read_deleted_env.json")
-	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/v2/environments/env-q2opmd")).
+	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/org/v2/environments/env-q2opmd")).
 		InScenario(envScenarioName).
 		WhenScenarioStateIs(scenarioStateEnvHasBeenDeleted).
 		WillReturn(
@@ -125,7 +125,7 @@ func TestAccEnvironment(t *testing.T) {
 			http.StatusForbidden,
 		))
 
-	deleteEnvStub := wiremock.Delete(wiremock.URLPathEqualTo("/v2/environments/env-q2opmd")).
+	deleteEnvStub := wiremock.Delete(wiremock.URLPathEqualTo("/org/v2/environments/env-q2opmd")).
 		InScenario(envScenarioName).
 		WhenScenarioStateIs(scenarioStateEnvNameHasBeenUpdated).
 		WillSetStateTo(scenarioStateEnvHasBeenDeleted).
@@ -178,9 +178,9 @@ func TestAccEnvironment(t *testing.T) {
 		},
 	})
 
-	checkStubCount(t, wiremockClient, createEnvStub, "POST /v2/environments", expectedCountOne)
-	checkStubCount(t, wiremockClient, patchEnvStub, "PATCH /v2/environments/env-q2opmd", expectedCountOne)
-	checkStubCount(t, wiremockClient, deleteEnvStub, "DELETE /v2/environments/env-q2opmd", expectedCountOne)
+	checkStubCount(t, wiremockClient, createEnvStub, "POST /org/v2/environments", expectedCountOne)
+	checkStubCount(t, wiremockClient, patchEnvStub, "PATCH /org/v2/environments/env-q2opmd", expectedCountOne)
+	checkStubCount(t, wiremockClient, deleteEnvStub, "DELETE /org/v2/environments/env-q2opmd", expectedCountOne)
 }
 
 func testAccCheckEnvironmentDestroy(s *terraform.State) error {
@@ -191,7 +191,7 @@ func testAccCheckEnvironmentDestroy(s *terraform.State) error {
 			continue
 		}
 		deletedEnvironmentId := rs.Primary.ID
-		req := c.orgClient.EnvironmentsV2Api.GetV2Environment(c.orgApiContext(context.Background()), deletedEnvironmentId)
+		req := c.orgClient.EnvironmentsOrgV2Api.GetOrgV2Environment(c.orgApiContext(context.Background()), deletedEnvironmentId)
 		deletedEnvironment, response, err := req.Execute()
 		if response != nil && (response.StatusCode == http.StatusForbidden || response.StatusCode == http.StatusNotFound) {
 			// v2/environments/{nonExistentEnvId/deletedEnvID} returns http.StatusForbidden instead of http.StatusNotFound

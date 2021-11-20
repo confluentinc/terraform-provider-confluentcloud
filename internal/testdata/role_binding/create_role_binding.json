@@ -1,0 +1,12 @@
+{
+  "crn_pattern": "crn://confluent.cloud/organization=0d9c5d94-e4fe-44ec-9cf1-bd99761fca75/environment=env-ym2y0k/cloud-cluster=lkc-xrk0ng",
+  "kind": "RoleBinding",
+  "id": "rb-OOXL7",
+  "metadata": {
+    "self": "https://api.confluent.cloud/iam/v2/role-bindings/rb-OOXL7",
+    "created_at": "2021-08-08T18:23:41.849685Z",
+    "resource_name": "crn://confluent.cloud/organization=0d9c5d94-e4fe-44ec-9cf1-bd99761fca75/rolebinding=rb-OOXL7"
+  },
+  "principal": "User:u-vr99n5",
+  "role_name": "CloudClusterAdmin"
+}

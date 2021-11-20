@@ -46,19 +46,16 @@ func environmentResource() *schema.Resource {
 }
 
 func environmentUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	c := meta.(*Client)
-
-	displayName := extractDisplayName(d)
-
-	env := org.NewV2Environment()
-	if displayName != "" {
-		env.SetDisplayName(displayName)
+	if d.HasChangeExcept(paramDisplayName) {
+		return diag.FromErr(fmt.Errorf(fmt.Sprintf("only %s field can be updated for an environment", paramDisplayName)))
 	}
 
-	env.SetId(d.Id())
+	updatedEnvironment := org.NewOrgV2Environment()
+	updatedDisplayName := d.Get(paramDisplayName).(string)
+	updatedEnvironment.SetDisplayName(updatedDisplayName)
 
-	req := c.orgClient.EnvironmentsV2Api.UpdateV2Environment(c.orgApiContext(ctx), d.Id()).V2Environment(*env)
-	_, _, err := req.Execute()
+	c := meta.(*Client)
+	_, _, err := c.orgClient.EnvironmentsOrgV2Api.UpdateOrgV2Environment(c.orgApiContext(ctx), d.Id()).OrgV2Environment(*updatedEnvironment).Execute()
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -70,8 +67,8 @@ func environmentUpdate(ctx context.Context, d *schema.ResourceData, meta interfa
 func environmentCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*Client)
 
-	displayName := extractDisplayName(d)
-	env := org.NewV2Environment()
+	displayName := d.Get(paramDisplayName).(string)
+	env := org.NewOrgV2Environment()
 	env.SetDisplayName(displayName)
 
 	createdEnv, resp, err := executeEnvironmentCreate(c.orgApiContext(ctx), c, env)
@@ -85,8 +82,8 @@ func environmentCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func executeEnvironmentCreate(ctx context.Context, c *Client, environment *org.V2Environment) (org.V2Environment, *http.Response, error) {
-	req := c.orgClient.EnvironmentsV2Api.CreateV2Environment(c.orgApiContext(ctx)).V2Environment(*environment)
+func executeEnvironmentCreate(ctx context.Context, c *Client, environment *org.OrgV2Environment) (org.OrgV2Environment, *http.Response, error) {
+	req := c.orgClient.EnvironmentsOrgV2Api.CreateOrgV2Environment(c.orgApiContext(ctx)).OrgV2Environment(*environment)
 
 	return req.Execute()
 }
@@ -94,7 +91,7 @@ func executeEnvironmentCreate(ctx context.Context, c *Client, environment *org.V
 func environmentDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*Client)
 
-	req := c.orgClient.EnvironmentsV2Api.DeleteV2Environment(c.orgApiContext(ctx), d.Id())
+	req := c.orgClient.EnvironmentsOrgV2Api.DeleteOrgV2Environment(c.orgApiContext(ctx), d.Id())
 	_, err := req.Execute()
 
 	if err != nil {
@@ -104,8 +101,8 @@ func environmentDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func executeEnvironmentRead(ctx context.Context, c *Client, environmentId string) (org.V2Environment, *http.Response, error) {
-	req := c.orgClient.EnvironmentsV2Api.GetV2Environment(c.orgApiContext(ctx), environmentId)
+func executeEnvironmentRead(ctx context.Context, c *Client, environmentId string) (org.OrgV2Environment, *http.Response, error) {
+	req := c.orgClient.EnvironmentsOrgV2Api.GetOrgV2Environment(c.orgApiContext(ctx), environmentId)
 	return req.Execute()
 }
 
