@@ -169,7 +169,7 @@ func kafkaTopicDelete(ctx context.Context, d *schema.ResourceData, meta interfac
 	_, err = kafkaRestClient.apiClient.TopicV3Api.DeleteKafkaV3Topic(kafkaRestClient.apiContext(ctx), kafkaRestClient.clusterId, topicName)
 
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("error deleting kafka topic (%s), err: %s", d.Id(), err))
+		return diag.Errorf("error deleting kafka topic (%s), err: %s", d.Id(), err)
 	}
 
 	return nil
@@ -307,7 +307,7 @@ func readAndSetTopicResourceConfigurationArguments(ctx context.Context, d *schem
 
 func kafkaTopicUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	if d.HasChangesExcept(paramCredentials) {
-		return diag.FromErr(fmt.Errorf("only %s block can be updated for a Kafka topic", paramCredentials))
+		return diag.Errorf("only %s block can be updated for a Kafka topic", paramCredentials)
 	}
 	return nil
 }

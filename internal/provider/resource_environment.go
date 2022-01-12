@@ -16,7 +16,6 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	org "github.com/confluentinc/ccloud-sdk-go-v2/org/v2"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -47,7 +46,7 @@ func environmentResource() *schema.Resource {
 
 func environmentUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	if d.HasChangeExcept(paramDisplayName) {
-		return diag.FromErr(fmt.Errorf(fmt.Sprintf("only %s field can be updated for an environment", paramDisplayName)))
+		return diag.Errorf("only %s field can be updated for an environment", paramDisplayName)
 	}
 
 	updatedEnvironment := org.NewOrgV2Environment()
@@ -95,7 +94,7 @@ func environmentDelete(ctx context.Context, d *schema.ResourceData, meta interfa
 	_, err := req.Execute()
 
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("error deleting environment (%s), err: %s", d.Id(), err))
+		return diag.Errorf("error deleting environment (%s), err: %s", d.Id(), err)
 	}
 
 	return nil

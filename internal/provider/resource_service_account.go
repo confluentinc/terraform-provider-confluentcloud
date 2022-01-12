@@ -52,7 +52,7 @@ func serviceAccountResource() *schema.Resource {
 
 func serviceAccountUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	if d.HasChangeExcept(paramDescription) {
-		return diag.FromErr(fmt.Errorf(fmt.Sprintf("only %s field can be updated for a service account", paramDescription)))
+		return diag.Errorf(fmt.Sprintf("only %s field can be updated for a service account", paramDescription))
 	}
 
 	updatedServiceAccount := iam.NewIamV2ServiceAccountUpdate()
@@ -103,7 +103,7 @@ func serviceAccountDelete(ctx context.Context, d *schema.ResourceData, meta inte
 	_, err := req.Execute()
 
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("error deleting service account (%s), err: %s", d.Id(), err))
+		return diag.Errorf("error deleting service account (%s), err: %s", d.Id(), err)
 	}
 
 	return nil

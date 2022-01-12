@@ -177,7 +177,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		_ = d.Set(paramBasicCluster, oldBasicClusterConfig)
 		_ = d.Set(paramStandardCluster, oldStandardClusterConfig)
 		_ = d.Set(paramDedicatedCluster, oldDedicatedClusterConfig)
-		return diag.FromErr(fmt.Errorf("clusters can only be upgraded from 'Basic' to 'Standard'"))
+		return diag.Errorf("clusters can only be upgraded from 'Basic' to 'Standard'")
 	}
 
 	isCkuUpdate := d.HasChange(paramDedicatedCluster) && clusterType == kafkaClusterTypeDedicated && d.HasChange(paramDedicatedCku)
@@ -186,7 +186,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		if newCku.(int) < oldCku.(int) {
 			// decreasing the number of CKUs aka Kafka Shrink operation
 			if newCku.(int)+1 != oldCku.(int) {
-				return diag.FromErr(fmt.Errorf("decreasing the number of CKUs by more than 1 is currently not supported"))
+				return diag.Errorf("decreasing the number of CKUs by more than 1 is currently not supported")
 			}
 		}
 		availability := d.Get(paramAvailability).(string)
@@ -219,7 +219,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		log.Printf("[DEBUG] Waiting for Kafka cluster CKU update to complete")
 		output, err := stateConf.WaitForStateContext(c.cmkApiContext(ctx))
 		if err != nil {
-			return diag.FromErr(fmt.Errorf("error waiting for CKU update of Kafka cluster (%s): %s", d.Id(), err))
+			return diag.Errorf("error waiting for CKU update of Kafka cluster (%s): %s", d.Id(), err)
 		}
 		err = d.Set(paramDedicatedCluster, []interface{}{map[string]interface{}{
 			paramCku: output.(cmk.CmkV2Cluster).Status.Cku,
@@ -273,7 +273,7 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		spec.SetConfig(cmk.CmkV2DedicatedAsCmkV2ClusterSpecConfigOneOf(cmk.NewCmkV2Dedicated(kafkaClusterTypeDedicated, cku)))
 	} else {
 		log.Printf("[ERROR] Creating Kafka cluster create failed: unknown Kafka cluster type was provided: %s", clusterType)
-		return diag.FromErr(fmt.Errorf("kafka cluster create failed: unknown Kafka cluster type was provided: %s", clusterType))
+		return diag.Errorf("kafka cluster create failed: unknown Kafka cluster type was provided: %s", clusterType)
 	}
 	spec.SetEnvironment(cmk.ObjectReference{Id: environmentId})
 	cluster := cmk.CmkV2Cluster{Spec: spec}
@@ -305,7 +305,7 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	log.Printf("[DEBUG] Waiting for Kafka cluster provisioning to become %s", stateDone)
 	output, err := stateConf.WaitForStateContext(c.cmkApiContext(ctx))
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("error waiting for Kafka cluster (%s) to be %s: %s", d.Id(), err, stateDone))
+		return diag.Errorf("error waiting for Kafka cluster (%s) to be %s: %s", d.Id(), err, stateDone)
 	}
 
 	if err == nil {
@@ -409,7 +409,7 @@ func kafkaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	_, err = req.Execute()
 
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("error deleting Kafka cluster (%s), err: %s", d.Id(), err))
+		return diag.Errorf("error deleting Kafka cluster (%s), err: %s", d.Id(), err)
 	}
 
 	return nil

@@ -208,7 +208,7 @@ func kafkaAclDelete(ctx context.Context, d *schema.ResourceData, meta interface{
 	_, _, err = kafkaRestClient.apiClient.ACLV3Api.DeleteKafkaV3Acls(kafkaRestClient.apiContext(ctx), kafkaRestClient.clusterId, opts)
 
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("error deleting kafka ACL (%s), err: %s", d.Id(), err))
+		return diag.Errorf("error deleting kafka ACL (%s), err: %s", d.Id(), err)
 	}
 
 	return nil
@@ -370,7 +370,7 @@ func deserializeAcl(serializedAcl string) (Acl, error) {
 
 func kafkaAclUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	if d.HasChangesExcept(paramCredentials) {
-		return diag.FromErr(fmt.Errorf("only %s block can be updated for a Kafka ACL", paramCredentials))
+		return diag.Errorf("only %s block can be updated for a Kafka ACL", paramCredentials)
 	}
 	return nil
 }
