@@ -63,7 +63,7 @@ func serviceAccountUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 	_, _, err := c.iamClient.ServiceAccountsIamV2Api.UpdateIamV2ServiceAccount(c.iamApiContext(ctx), d.Id()).IamV2ServiceAccountUpdate(*updatedServiceAccount).Execute()
 
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 
 	return nil
@@ -82,7 +82,7 @@ func serviceAccountCreate(ctx context.Context, d *schema.ResourceData, meta inte
 	createdServiceAccount, resp, err := executeServiceAccountCreate(c.iamApiContext(ctx), c, serviceAccount)
 	if err != nil {
 		log.Printf("[ERROR] service account create failed %v, %v, %s", serviceAccount, resp, err)
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	d.SetId(createdServiceAccount.GetId())
 	log.Printf("[DEBUG] Created service account %s", createdServiceAccount.GetId())
@@ -131,5 +131,5 @@ func serviceAccountRead(ctx context.Context, d *schema.ResourceData, meta interf
 	if err == nil {
 		err = d.Set(paramDescription, serviceAccount.GetDescription())
 	}
-	return diag.FromErr(err)
+	return createDiagnosticsWithDetails(err)
 }

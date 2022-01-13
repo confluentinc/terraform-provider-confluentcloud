@@ -22,6 +22,7 @@ import (
 	kafkarestv3 "github.com/confluentinc/ccloud-sdk-go-v2/kafkarest/v3"
 	mds "github.com/confluentinc/ccloud-sdk-go-v2/mds/v2"
 	org "github.com/confluentinc/ccloud-sdk-go-v2/org/v2"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"os"
@@ -244,4 +245,68 @@ func extractStringAttributeFromListBlockOfSizeOne(d *schema.ResourceData, blockN
 		return "", fmt.Errorf("could not find %s attribute in %s block", attributeName, blockName)
 	}
 	return value, nil
+}
+
+// createDiagnosticsWithDetails will convert GenericOpenAPIError error into a Diagnostics with details.
+// It should be used instead of diag.FromErr() in this project
+// since diag.FromErr() returns just HTTP status code and its generic name (i.e., "400 Bad Request")
+// (because of its usage of GenericOpenAPIError.Error()).
+func createDiagnosticsWithDetails(err error) diag.Diagnostics {
+	if err == nil {
+		return nil
+	}
+	// At this point it's just status code and its generic name
+	errorMessage := err.Error()
+
+	// Add error.detail to the final error message
+	if cmkError, ok := err.(cmk.GenericOpenAPIError); ok {
+		if cmkFailure, ok := cmkError.Model().(cmk.Failure); ok {
+			cmkFailureErrors := cmkFailure.GetErrors()
+			if len(cmkFailureErrors) > 0 && cmkFailureErrors[0].Detail != nil {
+				errorMessage = fmt.Sprintf("%s: %s", errorMessage, *cmkFailureErrors[0].Detail)
+			}
+		}
+	}
+
+	if iamError, ok := err.(iam.GenericOpenAPIError); ok {
+		if iamFailure, ok := iamError.Model().(iam.Failure); ok {
+			iamFailureErrors := iamFailure.GetErrors()
+			if len(iamFailureErrors) > 0 && iamFailureErrors[0].Detail != nil {
+				errorMessage = fmt.Sprintf("%s: %s", errorMessage, *iamFailureErrors[0].Detail)
+			}
+		}
+	}
+
+	if mdsError, ok := err.(mds.GenericOpenAPIError); ok {
+		if mdsFailure, ok := mdsError.Model().(mds.Failure); ok {
+			mdsFailureErrors := mdsFailure.GetErrors()
+			if len(mdsFailureErrors) > 0 && mdsFailureErrors[0].Detail != nil {
+				errorMessage = fmt.Sprintf("%s: %s", errorMessage, *mdsFailureErrors[0].Detail)
+			}
+		}
+	}
+
+	if orgError, ok := err.(org.GenericOpenAPIError); ok {
+		if orgFailure, ok := orgError.Model().(org.Failure); ok {
+			orgFailureErrors := orgFailure.GetErrors()
+			if len(orgFailureErrors) > 0 && orgFailureErrors[0].Detail != nil {
+				errorMessage = fmt.Sprintf("%s: %s", errorMessage, *orgFailureErrors[0].Detail)
+			}
+		}
+	}
+
+	if kafkaRestGenericOpenAPIError, ok := err.(kafkarestv3.GenericOpenAPIError); ok {
+		if kafkaRestError, ok := kafkaRestGenericOpenAPIError.Model().(kafkarestv3.Error); ok {
+			if kafkaRestError.Message != nil {
+				errorMessage = fmt.Sprintf("%s: %s", errorMessage, *kafkaRestError.Message)
+			}
+		}
+	}
+
+	return diag.Diagnostics{
+		diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  errorMessage,
+		},
+	}
 }

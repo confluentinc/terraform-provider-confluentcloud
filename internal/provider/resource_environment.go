@@ -57,7 +57,7 @@ func environmentUpdate(ctx context.Context, d *schema.ResourceData, meta interfa
 	_, _, err := c.orgClient.EnvironmentsOrgV2Api.UpdateOrgV2Environment(c.orgApiContext(ctx), d.Id()).OrgV2Environment(*updatedEnvironment).Execute()
 
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 
 	return nil
@@ -73,7 +73,7 @@ func environmentCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 	createdEnv, resp, err := executeEnvironmentCreate(c.orgApiContext(ctx), c, env)
 	if err != nil {
 		log.Printf("[ERROR] Environment create failed %v, %v, %s", env, resp, err)
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	d.SetId(createdEnv.GetId())
 	log.Printf("[DEBUG] Created environment %s", createdEnv.GetId())
@@ -119,5 +119,5 @@ func environmentRead(ctx context.Context, d *schema.ResourceData, meta interface
 	if err == nil {
 		err = d.Set(paramDisplayName, environment.GetDisplayName())
 	}
-	return diag.FromErr(err)
+	return createDiagnosticsWithDetails(err)
 }

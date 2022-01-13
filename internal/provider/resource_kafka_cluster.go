@@ -121,7 +121,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	displayName := d.Get(paramDisplayName).(string)
 	environmentId, err := validEnvironmentId(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	clusterType := extractClusterType(d)
 	// Non-zero value means CKU has been set
@@ -141,7 +141,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		}
 
 		if err != nil {
-			return diag.FromErr(err)
+			return createDiagnosticsWithDetails(err)
 		}
 	}
 
@@ -166,7 +166,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		}
 
 		if err != nil {
-			return diag.FromErr(err)
+			return createDiagnosticsWithDetails(err)
 		}
 	} else if isForbiddenStandardBasicDowngrade || isForbiddenDedicatedUpdate {
 		// Revert the cluster type in TF state
@@ -192,7 +192,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		availability := d.Get(paramAvailability).(string)
 		err = ckuCheck(cku, availability)
 		if err != nil {
-			return diag.FromErr(err)
+			return createDiagnosticsWithDetails(err)
 		}
 
 		updateReq := cmk.NewCmkV2ClusterUpdate()
@@ -204,7 +204,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 
 		_, _, err := req.Execute()
 		if err != nil {
-			return diag.FromErr(err)
+			return createDiagnosticsWithDetails(err)
 		}
 
 		stateConf := &resource.StateChangeConf{
@@ -225,11 +225,11 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 			paramCku: output.(cmk.CmkV2Cluster).Status.Cku,
 		}})
 		if err != nil {
-			return diag.FromErr(err)
+			return createDiagnosticsWithDetails(err)
 		}
 	}
 
-	return diag.FromErr(err)
+	return createDiagnosticsWithDetails(err)
 }
 
 func executeKafkaCreate(ctx context.Context, c *Client, cluster *cmk.CmkV2Cluster) (cmk.CmkV2Cluster, *http.Response, error) {
@@ -248,11 +248,11 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	clusterType := extractClusterType(d)
 	environmentId, err := validEnvironmentId(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	err = setEnvironmentId(environmentId, d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 
 	spec := cmk.NewCmkV2ClusterSpec()
@@ -268,7 +268,7 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		cku := extractCku(d)
 		err = ckuCheck(cku, availability)
 		if err != nil {
-			return diag.FromErr(err)
+			return createDiagnosticsWithDetails(err)
 		}
 		spec.SetConfig(cmk.CmkV2DedicatedAsCmkV2ClusterSpecConfigOneOf(cmk.NewCmkV2Dedicated(kafkaClusterTypeDedicated, cku)))
 	} else {
@@ -281,14 +281,14 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	specBytes, err := json.Marshal(spec)
 	if err != nil {
 		log.Printf("[ERROR] JSON marshaling failed on spec: %s", err)
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	log.Printf("[DEBUG] Creating Kafka cluster with spec %s", specBytes)
 
 	kafka, resp, err := executeKafkaCreate(c.cmkApiContext(ctx), c, &cluster)
 	if err != nil {
 		log.Printf("[ERROR] Kafka cluster create failed %v, %v, %s", cluster, resp, err)
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	d.SetId(kafka.GetId())
 	log.Printf("[DEBUG] Created cluster %s", kafka.GetId())
@@ -314,7 +314,7 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	if err == nil {
 		err = d.Set(paramHttpEndpoint, output.(cmk.CmkV2Cluster).Spec.GetHttpEndpoint())
 	}
-	return diag.FromErr(err)
+	return createDiagnosticsWithDetails(err)
 }
 
 func kafkaProvisioned(ctx context.Context, c *Client, environmentId string, clusterId string) resource.StateRefreshFunc {
@@ -402,7 +402,7 @@ func kafkaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 
 	environmentId, err := validEnvironmentId(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 
 	req := c.cmkClient.ClustersCmkV2Api.DeleteCmkV2Cluster(c.cmkApiContext(ctx), d.Id()).Environment(environmentId)
@@ -442,12 +442,12 @@ func kafkaRead(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	environmentId, err := validEnvironmentId(d)
 	if err != nil {
 		log.Printf("[ERROR] %s", err)
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 
 	_, err = readAndSetResourceConfigurationArguments(ctx, d, meta, environmentId, clusterId)
 
-	return diag.FromErr(err)
+	return createDiagnosticsWithDetails(err)
 }
 
 func readAndSetResourceConfigurationArguments(ctx context.Context, d *schema.ResourceData, meta interface{}, environmentId, clusterId string) ([]*schema.ResourceData, error) {

@@ -83,7 +83,7 @@ func roleBindingCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 	createdRoleBinding, resp, err := executeRoleBindingCreate(c.mdsApiContext(ctx), c, roleBinding)
 	if err != nil {
 		log.Printf("[ERROR] role binding create failed %v, %v, %s", roleBinding, resp, err)
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	d.SetId(createdRoleBinding.GetId())
 	log.Printf("[DEBUG] Created role binding id: %s", createdRoleBinding.GetId())
@@ -131,7 +131,7 @@ func roleBindingRead(ctx context.Context, d *schema.ResourceData, meta interface
 	if err == nil {
 		err = d.Set(paramCrnPattern, roleBinding.GetCrnPattern())
 	}
-	return diag.FromErr(err)
+	return createDiagnosticsWithDetails(err)
 }
 func executeRoleBindingRead(ctx context.Context, c *Client, roleBindingId string) (mds.IamV2RoleBinding, *http.Response, error) {
 	req := c.mdsClient.RoleBindingsIamV2Api.GetIamV2RoleBinding(c.mdsApiContext(ctx), roleBindingId)

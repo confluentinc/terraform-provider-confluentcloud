@@ -144,12 +144,12 @@ func kafkaAclCreate(ctx context.Context, d *schema.ResourceData, meta interface{
 	clusterId := d.Get(paramClusterId).(string)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
 	acl, err := extractAcl(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	kafkaAclRequestData := kafkarestv3.CreateAclRequestData{
 		ResourceType: acl.ResourceType,
@@ -165,7 +165,7 @@ func kafkaAclCreate(ctx context.Context, d *schema.ResourceData, meta interface{
 
 	if err != nil {
 		log.Printf("[ERROR] Kafka ACL create failed %v, %v, %s", kafkaAclRequestData, resp, err)
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	kafkaAclId := createKafkaAclId(kafkaRestClient.clusterId, acl)
 	d.SetId(kafkaAclId)
@@ -187,13 +187,13 @@ func kafkaAclDelete(ctx context.Context, d *schema.ResourceData, meta interface{
 	clusterId := d.Get(paramClusterId).(string)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
 
 	acl, err := extractAcl(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	opts := &kafkarestv3.DeleteKafkaV3AclsOpts{
 		ResourceType: optional.NewInterface(acl.ResourceType),
@@ -225,17 +225,17 @@ func kafkaAclRead(ctx context.Context, d *schema.ResourceData, meta interface{})
 	clusterId := d.Get(paramClusterId).(string)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
 	acl, err := extractAcl(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 
 	_, err = readAndSetAclResourceConfigurationArguments(ctx, d, kafkaRestClient, acl)
 
-	return diag.FromErr(err)
+	return createDiagnosticsWithDetails(err)
 }
 
 func createKafkaAclId(clusterId string, acl Acl) string {

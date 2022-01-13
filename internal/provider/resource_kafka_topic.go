@@ -118,7 +118,7 @@ func kafkaTopicCreate(ctx context.Context, d *schema.ResourceData, meta interfac
 	clusterId := d.Get(paramClusterId).(string)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
 	topicName := d.Get(paramTopicName).(string)
@@ -135,7 +135,7 @@ func kafkaTopicCreate(ctx context.Context, d *schema.ResourceData, meta interfac
 
 	if err != nil {
 		log.Printf("[ERROR] Kafka topic create failed %v, %v, %s", kafkaTopicRequestData, resp, err)
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 
 	// issue another read request to fetch the real data
@@ -161,7 +161,7 @@ func kafkaTopicDelete(ctx context.Context, d *schema.ResourceData, meta interfac
 	clusterId := d.Get(paramClusterId).(string)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
 	topicName := d.Get(paramTopicName).(string)
@@ -182,14 +182,14 @@ func kafkaTopicRead(ctx context.Context, d *schema.ResourceData, meta interface{
 	clusterId := d.Get(paramClusterId).(string)
 	clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
 	if err != nil {
-		return diag.FromErr(err)
+		return createDiagnosticsWithDetails(err)
 	}
 	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
 	topicName := d.Get(paramTopicName).(string)
 
 	_, err = readAndSetTopicResourceConfigurationArguments(ctx, d, kafkaRestClient, topicName)
 
-	return diag.FromErr(err)
+	return createDiagnosticsWithDetails(err)
 }
 
 func createKafkaTopicId(clusterId, topicName string) string {
