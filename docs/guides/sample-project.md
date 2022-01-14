@@ -224,8 +224,8 @@ Save your Kafka API key and secret in a secure location.
     }
 
     variable "service_account_int_id" {
-      type = number
-      description = "Service Account Integer ID"
+      type = string
+      description = "Service Account ID"
     }
     ```
 
