@@ -75,3 +75,5 @@ provider "confluentcloud" {
 * [Request Features](mailto:cflt-tf-access@confluent.io?subject=Feature%20Request)
 
 -> **Note:** If you can see `Error: 429 Too Many Requests` when running `terraform plan` or `terraform apply`, please follow [this piece of advice](https://github.com/confluentinc/terraform-provider-confluentcloud/issues/15#issuecomment-972131964).
+
+-> **Note:** If you are running into issues when trying to write a reusable module using this provider, please look at [this message](https://github.com/confluentinc/terraform-provider-confluentcloud/issues/20#issuecomment-1011833161) to resolve the problem.
