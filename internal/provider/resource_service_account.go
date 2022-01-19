@@ -66,7 +66,7 @@ func serviceAccountUpdate(ctx context.Context, d *schema.ResourceData, meta inte
 		return createDiagnosticsWithDetails(err)
 	}
 
-	return nil
+	return serviceAccountRead(ctx, d, meta)
 }
 
 func serviceAccountCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -87,12 +87,11 @@ func serviceAccountCreate(ctx context.Context, d *schema.ResourceData, meta inte
 	d.SetId(createdServiceAccount.GetId())
 	log.Printf("[DEBUG] Created service account %s", createdServiceAccount.GetId())
 
-	return nil
+	return serviceAccountRead(ctx, d, meta)
 }
 
 func executeServiceAccountCreate(ctx context.Context, c *Client, serviceAccount *iam.IamV2ServiceAccount) (iam.IamV2ServiceAccount, *http.Response, error) {
 	req := c.iamClient.ServiceAccountsIamV2Api.CreateIamV2ServiceAccount(c.iamApiContext(ctx)).IamV2ServiceAccount(*serviceAccount)
-
 	return req.Execute()
 }
 

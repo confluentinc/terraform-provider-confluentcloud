@@ -60,7 +60,7 @@ func environmentUpdate(ctx context.Context, d *schema.ResourceData, meta interfa
 		return createDiagnosticsWithDetails(err)
 	}
 
-	return nil
+	return environmentRead(ctx, d, meta)
 }
 
 func environmentCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -78,12 +78,11 @@ func environmentCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 	d.SetId(createdEnv.GetId())
 	log.Printf("[DEBUG] Created environment %s", createdEnv.GetId())
 
-	return nil
+	return environmentRead(ctx, d, meta)
 }
 
 func executeEnvironmentCreate(ctx context.Context, c *Client, environment *org.OrgV2Environment) (org.OrgV2Environment, *http.Response, error) {
 	req := c.orgClient.EnvironmentsOrgV2Api.CreateOrgV2Environment(c.orgApiContext(ctx)).OrgV2Environment(*environment)
-
 	return req.Execute()
 }
 

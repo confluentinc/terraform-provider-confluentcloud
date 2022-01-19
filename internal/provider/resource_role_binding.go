@@ -88,12 +88,11 @@ func roleBindingCreate(ctx context.Context, d *schema.ResourceData, meta interfa
 	d.SetId(createdRoleBinding.GetId())
 	log.Printf("[DEBUG] Created role binding id: %s", createdRoleBinding.GetId())
 
-	return nil
+	return roleBindingRead(ctx, d, meta)
 }
 
 func executeRoleBindingCreate(ctx context.Context, c *Client, roleBinding *mds.IamV2RoleBinding) (mds.IamV2RoleBinding, *http.Response, error) {
 	req := c.mdsClient.RoleBindingsIamV2Api.CreateIamV2RoleBinding(c.mdsApiContext(ctx)).IamV2RoleBinding(*roleBinding)
-
 	return req.Execute()
 }
 
