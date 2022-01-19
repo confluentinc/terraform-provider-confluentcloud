@@ -114,13 +114,13 @@ Kafka cluster.
 3.  Run the following command to create the plan:
 
     ```bash
-    terraform plan -parallelism=1 -out=tfplan_add_sa_env_and_cluster
+    terraform plan -out=tfplan_add_sa_env_and_cluster
     ```
 
 4.  Run the following command to apply the plan and create cloud resources:
 
     ```bash
-    terraform apply -parallelism=1 tfplan_add_sa_env_and_cluster
+    terraform apply tfplan_add_sa_env_and_cluster
     ```
 
     Your output should resemble:
@@ -296,7 +296,7 @@ Save your Kafka API key and secret in a secure location.
 4.  Run the following command to create the plan.
 
     ```bash
-    terraform plan -parallelism=1 -out=tfplan_add_topic_and_2_acls
+    terraform plan -out=tfplan_add_topic_and_2_acls
     ```
 
     Your output should resemble:
@@ -304,7 +304,7 @@ Save your Kafka API key and secret in a secure location.
 5.  Run the following command to apply the plan.
     
     ```bash
-    terraform apply -parallelism=1 tfplan_add_topic_and_2_acls
+    terraform apply tfplan_add_topic_and_2_acls
     ```
 
     Your output should resemble:
@@ -325,7 +325,7 @@ Save your Kafka API key and secret in a secure location.
 To clean up and remove the resources you've created, run the following command:
 
 ```bash
-terraform destroy -parallelism=1 --auto-approve
+terraform destroy --auto-approve
 ```
 
 Your output should resemble:
