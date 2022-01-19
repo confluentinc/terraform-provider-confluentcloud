@@ -199,6 +199,11 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	mdsCfg.UserAgent = userAgent
 	orgCfg.UserAgent = userAgent
 
+	cmkCfg.HTTPClient = createRetryableHttpClientWithExponentialBackoff()
+	iamCfg.HTTPClient = createRetryableHttpClientWithExponentialBackoff()
+	mdsCfg.HTTPClient = createRetryableHttpClientWithExponentialBackoff()
+	orgCfg.HTTPClient = createRetryableHttpClientWithExponentialBackoff()
+
 	client := Client{
 		cmkClient:              cmk.NewAPIClient(cmkCfg),
 		iamClient:              iam.NewAPIClient(iamCfg),
