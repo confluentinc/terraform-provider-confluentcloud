@@ -118,7 +118,7 @@ func roleBindingRead(ctx context.Context, d *schema.ResourceData, meta interface
 		log.Printf("[WARN] Role binding get failed for id %s, %v, %s", d.Id(), resp, err)
 
 		// https://learn.hashicorp.com/tutorials/terraform/provider-setup
-		isResourceNotFound := HasStatusForbidden(resp)
+		isResourceNotFound := HasStatusForbidden(resp) && !HasStatusForbiddenDueToInvalidAPIKey(resp)
 		if isResourceNotFound {
 			log.Printf("[WARN] Role binding with id=%s is not found", d.Id())
 			// If the resource isn't available, Terraform destroys the resource in state.

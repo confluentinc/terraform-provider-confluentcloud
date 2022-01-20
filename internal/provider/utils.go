@@ -25,9 +25,11 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -328,6 +330,22 @@ func createDiagnosticsWithDetails(err error) diag.Diagnostics {
 			Summary:  errorMessage,
 		},
 	}
+}
+
+// Reports whether the response has http.StatusForbidden status due to an invalid Cloud API Key vs other reasons
+// which is useful to distinguish from scenarios where http.StatusForbidden represents http.StatusNotFound for
+// security purposes.
+func HasStatusForbiddenDueToInvalidAPIKey(response *http.Response) bool {
+	if HasStatusForbidden(response) {
+		bodyBytes, err := io.ReadAll(response.Body)
+		if err != nil {
+			return false
+		}
+		bodyString := string(bodyBytes)
+		// Search for a specific error message that indicates the invalid Cloud API Key has been used
+		return strings.Contains(bodyString, "invalid API key")
+	}
+	return false
 }
 
 // Reports whether the response has http.StatusForbidden status
