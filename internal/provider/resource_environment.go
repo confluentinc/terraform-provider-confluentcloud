@@ -108,12 +108,18 @@ func environmentRead(ctx context.Context, d *schema.ResourceData, meta interface
 	log.Printf("[INFO] Environment read for %s", d.Id())
 	c := meta.(*Client)
 	environment, resp, err := executeEnvironmentRead(c.orgApiContext(ctx), c, d.Id())
-	if HasStatusForbidden(resp) {
-		d.SetId("")
-		return nil
-	}
 	if err != nil {
-		log.Printf("[ERROR] Environment get failed for id %s, %v, %s", d.Id(), resp, err)
+		log.Printf("[WARN] Environment get failed for id %s, %v, %s", d.Id(), resp, err)
+
+		// https://learn.hashicorp.com/tutorials/terraform/provider-setup
+		isResourceNotFound := HasStatusForbidden(resp)
+		if isResourceNotFound {
+			log.Printf("[WARN] Environment with id=%s is not found", d.Id())
+			// If the resource isn't available, Terraform destroys the resource in state.
+			d.SetId("")
+			return nil
+		}
+
 		return createDiagnosticsWithDetails(err)
 	}
 	if err := d.Set(paramDisplayName, environment.GetDisplayName()); err != nil {

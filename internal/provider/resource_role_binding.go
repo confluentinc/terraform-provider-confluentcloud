@@ -114,12 +114,18 @@ func roleBindingRead(ctx context.Context, d *schema.ResourceData, meta interface
 	log.Printf("[INFO] Role binding read for %s", d.Id())
 	c := meta.(*Client)
 	roleBinding, resp, err := executeRoleBindingRead(c.mdsApiContext(ctx), c, d.Id())
-	if HasStatusForbidden(resp) {
-		d.SetId("")
-		return nil
-	}
 	if err != nil {
-		log.Printf("[ERROR] Role binding get failed for id %s, %v, %s", d.Id(), resp, err)
+		log.Printf("[WARN] Role binding get failed for id %s, %v, %s", d.Id(), resp, err)
+
+		// https://learn.hashicorp.com/tutorials/terraform/provider-setup
+		isResourceNotFound := HasStatusForbidden(resp)
+		if isResourceNotFound {
+			log.Printf("[WARN] Role binding with id=%s is not found", d.Id())
+			// If the resource isn't available, Terraform destroys the resource in state.
+			d.SetId("")
+			return nil
+		}
+
 		return createDiagnosticsWithDetails(err)
 	}
 	if err := d.Set(paramPrincipal, roleBinding.GetPrincipal()); err != nil {

@@ -117,12 +117,18 @@ func serviceAccountRead(ctx context.Context, d *schema.ResourceData, meta interf
 	log.Printf("[INFO] Service account read for %s", d.Id())
 	c := meta.(*Client)
 	serviceAccount, resp, err := executeServiceAccountRead(c.iamApiContext(ctx), c, d.Id())
-	if HasStatusNotFound(resp) {
-		d.SetId("")
-		return nil
-	}
 	if err != nil {
-		log.Printf("[ERROR] Service account get failed for id %s, %v, %s", d.Id(), resp, err)
+		log.Printf("[WARN] Service account get failed for id %s, %v, %s", d.Id(), resp, err)
+
+		// https://learn.hashicorp.com/tutorials/terraform/provider-setup
+		isResourceNotFound := HasStatusNotFound(resp)
+		if isResourceNotFound {
+			log.Printf("[WARN] Service account with id=%s is not found", d.Id())
+			// If the resource isn't available, Terraform destroys the resource in state.
+			d.SetId("")
+			return nil
+		}
+
 		return createDiagnosticsWithDetails(err)
 	}
 	if err := d.Set(paramDisplayName, serviceAccount.GetDisplayName()); err != nil {
