@@ -120,7 +120,7 @@ func TestAccServiceAccount(t *testing.T) {
 		WillReturn(
 			string(readDeletedSaResponse),
 			contentTypeJSONHeader,
-			http.StatusForbidden,
+			http.StatusNotFound,
 		))
 
 	deleteSaStub := wiremock.Delete(wiremock.URLPathEqualTo("/iam/v2/service-accounts/sa-1jjv26")).
