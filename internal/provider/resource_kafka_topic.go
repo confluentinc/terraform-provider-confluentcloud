@@ -229,7 +229,7 @@ func clusterIdSchema() *schema.Schema {
 		Type:         schema.TypeString,
 		Required:     true,
 		ForceNew:     true,
-		Description:  "The Kafka cluster ID (e.g., `cluster-1`).",
+		Description:  "The Kafka cluster ID (e.g., `lkc-12345`).",
 		ValidateFunc: validation.StringMatch(regexp.MustCompile("^lkc-"), "the Kafka cluster ID must be of the form 'lkc-'"),
 	}
 }
