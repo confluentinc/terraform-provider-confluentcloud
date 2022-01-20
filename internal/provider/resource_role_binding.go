@@ -114,7 +114,7 @@ func roleBindingRead(ctx context.Context, d *schema.ResourceData, meta interface
 	log.Printf("[INFO] Role binding read for %s", d.Id())
 	c := meta.(*Client)
 	roleBinding, resp, err := executeRoleBindingRead(c.mdsApiContext(ctx), c, d.Id())
-	if resp != nil && (resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusForbidden) {
+	if resp != nil && resp.StatusCode == http.StatusForbidden {
 		d.SetId("")
 		return nil
 	}
