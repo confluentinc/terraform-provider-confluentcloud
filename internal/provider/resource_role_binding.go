@@ -120,17 +120,18 @@ func roleBindingRead(ctx context.Context, d *schema.ResourceData, meta interface
 	}
 	if err != nil {
 		log.Printf("[ERROR] Role binding get failed for id %s, %v, %s", d.Id(), resp, err)
+		return createDiagnosticsWithDetails(err)
 	}
-	if err == nil {
-		err = d.Set(paramPrincipal, roleBinding.GetPrincipal())
+	if err := d.Set(paramPrincipal, roleBinding.GetPrincipal()); err != nil {
+		return createDiagnosticsWithDetails(err)
 	}
-	if err == nil {
-		err = d.Set(paramRoleName, roleBinding.GetRoleName())
+	if err := d.Set(paramRoleName, roleBinding.GetRoleName()); err != nil {
+		return createDiagnosticsWithDetails(err)
 	}
-	if err == nil {
-		err = d.Set(paramCrnPattern, roleBinding.GetCrnPattern())
+	if err := d.Set(paramCrnPattern, roleBinding.GetCrnPattern()); err != nil {
+		return createDiagnosticsWithDetails(err)
 	}
-	return createDiagnosticsWithDetails(err)
+	return nil
 }
 func executeRoleBindingRead(ctx context.Context, c *Client, roleBindingId string) (mds.IamV2RoleBinding, *http.Response, error) {
 	req := c.mdsClient.RoleBindingsIamV2Api.GetIamV2RoleBinding(c.mdsApiContext(ctx), roleBindingId)

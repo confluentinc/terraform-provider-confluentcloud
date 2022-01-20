@@ -123,12 +123,13 @@ func serviceAccountRead(ctx context.Context, d *schema.ResourceData, meta interf
 	}
 	if err != nil {
 		log.Printf("[ERROR] Service account get failed for id %s, %v, %s", d.Id(), resp, err)
+		return createDiagnosticsWithDetails(err)
 	}
-	if err == nil {
-		err = d.Set(paramDisplayName, serviceAccount.GetDisplayName())
+	if err := d.Set(paramDisplayName, serviceAccount.GetDisplayName()); err != nil {
+		return createDiagnosticsWithDetails(err)
 	}
-	if err == nil {
-		err = d.Set(paramDescription, serviceAccount.GetDescription())
+	if err := d.Set(paramDescription, serviceAccount.GetDescription()); err != nil {
+		return createDiagnosticsWithDetails(err)
 	}
-	return createDiagnosticsWithDetails(err)
+	return nil
 }

@@ -114,9 +114,10 @@ func environmentRead(ctx context.Context, d *schema.ResourceData, meta interface
 	}
 	if err != nil {
 		log.Printf("[ERROR] Environment get failed for id %s, %v, %s", d.Id(), resp, err)
+		return createDiagnosticsWithDetails(err)
 	}
-	if err == nil {
-		err = d.Set(paramDisplayName, environment.GetDisplayName())
+	if err := d.Set(paramDisplayName, environment.GetDisplayName()); err != nil {
+		return createDiagnosticsWithDetails(err)
 	}
-	return createDiagnosticsWithDetails(err)
+	return nil
 }
