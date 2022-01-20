@@ -108,7 +108,7 @@ func environmentRead(ctx context.Context, d *schema.ResourceData, meta interface
 	log.Printf("[INFO] Environment read for %s", d.Id())
 	c := meta.(*Client)
 	environment, resp, err := executeEnvironmentRead(c.orgApiContext(ctx), c, d.Id())
-	if resp != nil && resp.StatusCode == http.StatusForbidden {
+	if HasStatusForbidden(resp) {
 		d.SetId("")
 		return nil
 	}

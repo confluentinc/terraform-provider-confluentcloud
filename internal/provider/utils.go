@@ -329,3 +329,13 @@ func createDiagnosticsWithDetails(err error) diag.Diagnostics {
 		},
 	}
 }
+
+// Reports whether the response has http.StatusForbidden status
+func HasStatusForbidden(response *http.Response) bool {
+	return response != nil && response.StatusCode == http.StatusForbidden
+}
+
+// Reports whether the response has http.StatusNotFound status
+func HasStatusNotFound(response *http.Response) bool {
+	return response != nil && response.StatusCode == http.StatusNotFound
+}

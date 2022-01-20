@@ -117,7 +117,7 @@ func serviceAccountRead(ctx context.Context, d *schema.ResourceData, meta interf
 	log.Printf("[INFO] Service account read for %s", d.Id())
 	c := meta.(*Client)
 	serviceAccount, resp, err := executeServiceAccountRead(c.iamApiContext(ctx), c, d.Id())
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
+	if HasStatusNotFound(resp) {
 		d.SetId("")
 		return nil
 	}
