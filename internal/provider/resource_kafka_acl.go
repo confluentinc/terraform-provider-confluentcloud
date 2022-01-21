@@ -170,7 +170,7 @@ func kafkaAclCreate(ctx context.Context, d *schema.ResourceData, meta interface{
 	kafkaAclId := createKafkaAclId(kafkaRestClient.clusterId, acl)
 	d.SetId(kafkaAclId)
 	log.Printf("[DEBUG] Created kafka ACL %s", kafkaAclId)
-	return nil
+	return kafkaAclRead(ctx, d, meta)
 }
 
 func executeKafkaAclCreate(ctx context.Context, c *KafkaRestClient, requestData kafkarestv3.CreateAclRequestData) (*http.Response, error) {
@@ -261,45 +261,56 @@ func readAndSetAclResourceConfigurationArguments(ctx context.Context, d *schema.
 		Permission:   optional.NewInterface(acl.Permission),
 	}
 
-	_, resp, err := executeKafkaAclRead(ctx, c, opts)
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		// https://learn.hashicorp.com/tutorials/terraform/provider-setup?in=terraform/providers
-		// If the resource isn't available, set the ID to an empty string so Terraform "destroys" the resource in state.
-		d.SetId("")
-		return nil, nil
-	}
+	remoteAcls, resp, err := executeKafkaAclRead(ctx, c, opts)
 	if err != nil {
 		log.Printf("[ERROR] Kafka ACL get failed for id %s, %v, %s", acl, resp, err)
+
+		// https://learn.hashicorp.com/tutorials/terraform/provider-setup
+		isResourceNotFound := HasStatusNotFound(resp)
+		if isResourceNotFound {
+			log.Printf("[WARN] Kafka ACL with id=%s is not found", d.Id())
+			// If the resource isn't available, Terraform destroys the resource in state.
+			d.SetId("")
+			return nil, nil
+		}
+
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramClusterId, c.clusterId)
+	if len(remoteAcls.Data) == 0 {
+		return nil, fmt.Errorf("no Kafka ACLs were matched for id=%s", d.Id())
+	} else if len(remoteAcls.Data) > 1 {
+		return nil, fmt.Errorf("multiple Kafka ACLs were matched for id=%s: %v", d.Id(), remoteAcls.Data)
 	}
-	if err == nil {
-		err = d.Set(paramResourceType, acl.ResourceType)
+	matchedAcl := remoteAcls.Data[0]
+	if err := d.Set(paramClusterId, c.clusterId); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramResourceName, acl.ResourceName)
+	if err := d.Set(paramResourceType, matchedAcl.ResourceType); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramPatternType, acl.PatternType)
+	if err := d.Set(paramResourceName, matchedAcl.ResourceName); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramPrincipal, acl.Principal)
+	if err := d.Set(paramPatternType, matchedAcl.PatternType); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramHost, acl.Host)
+	if err := d.Set(paramPrincipal, matchedAcl.Principal); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramOperation, acl.Operation)
+	if err := d.Set(paramHost, matchedAcl.Host); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramPermission, acl.Permission)
+	if err := d.Set(paramOperation, matchedAcl.Operation); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = setKafkaCredentials(c.clusterApiKey, c.clusterApiSecret, d)
+	if err := d.Set(paramPermission, matchedAcl.Permission); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramHttpEndpoint, c.httpEndpoint)
+	if err := setKafkaCredentials(c.clusterApiKey, c.clusterApiSecret, d); err != nil {
+		return nil, err
+	}
+	if err := d.Set(paramHttpEndpoint, c.httpEndpoint); err != nil {
+		return nil, err
 	}
 	d.SetId(createKafkaAclId(c.clusterId, acl))
 	return []*schema.ResourceData{d}, err
@@ -372,5 +383,5 @@ func kafkaAclUpdate(ctx context.Context, d *schema.ResourceData, meta interface{
 	if d.HasChangesExcept(paramCredentials) {
 		return diag.Errorf("only %s block can be updated for a Kafka ACL", paramCredentials)
 	}
-	return nil
+	return kafkaAclRead(ctx, d, meta)
 }

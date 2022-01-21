@@ -129,8 +129,6 @@ func kafkaTopicCreate(ctx context.Context, d *schema.ResourceData, meta interfac
 		Configs:         extractConfigs(d),
 	}
 
-	// both replication_factor and partitions_count would be incorrectly set to 0 in a response
-	// so we will ignore those properties in a response
 	_, resp, err := executeKafkaTopicCreate(ctx, kafkaRestClient, kafkaTopicRequestData)
 
 	if err != nil {
@@ -138,13 +136,10 @@ func kafkaTopicCreate(ctx context.Context, d *schema.ResourceData, meta interfac
 		return createDiagnosticsWithDetails(err)
 	}
 
-	// issue another read request to fetch the real data
-	kafkaTopicRead(ctx, d, meta)
-
 	kafkaTopicId := createKafkaTopicId(kafkaRestClient.clusterId, topicName)
 	d.SetId(kafkaTopicId)
 	log.Printf("[DEBUG] Created Kafka topic %s", kafkaTopicId)
-	return nil
+	return kafkaTopicRead(ctx, d, meta)
 }
 
 func executeKafkaTopicCreate(ctx context.Context, c *KafkaRestClient, requestData kafkarestv3.CreateTopicRequestData) (kafkarestv3.TopicData, *http.Response, error) {
@@ -258,49 +253,43 @@ func kafkaTopicImport(ctx context.Context, d *schema.ResourceData, meta interfac
 
 func readAndSetTopicResourceConfigurationArguments(ctx context.Context, d *schema.ResourceData, c *KafkaRestClient, topicName string) ([]*schema.ResourceData, error) {
 	kafkaTopic, resp, err := c.apiClient.TopicV3Api.GetKafkaV3Topic(c.apiContext(ctx), c.clusterId, topicName)
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		// https://learn.hashicorp.com/tutorials/terraform/provider-setup?in=terraform/providers
-		// If the resource isn't available, set the ID to an empty string so Terraform "destroys" the resource in state.
-		d.SetId("")
-		return nil, nil
-	}
 	if err != nil {
-		log.Printf("[ERROR] Kafka topic get failed for id %s, %v, %s", topicName, resp, err)
-	}
-	if err == nil {
-		err = d.Set(paramClusterId, kafkaTopic.ClusterId)
-	}
-	if err == nil {
-		err = d.Set(paramTopicName, kafkaTopic.TopicName)
-	}
-	if err == nil {
-		err = d.Set(paramPartitionsCount, kafkaTopic.PartitionsCount)
-	}
-	if err == nil {
-		topicConfigList, resp, err := c.apiClient.ConfigsV3Api.ListKafkaV3TopicConfigs(c.apiContext(ctx), c.clusterId, topicName)
-		if err != nil {
-			log.Printf("[ERROR] Kafka topic config get failed for id %s, %v, %s", d.Id(), resp, err)
-			return nil, err
+		log.Printf("[WARN] Kafka topic get failed for id %s, %v, %s", topicName, resp, err)
+
+		// https://learn.hashicorp.com/tutorials/terraform/provider-setup
+		isResourceNotFound := HasStatusNotFound(resp)
+		if isResourceNotFound {
+			log.Printf("[WARN] Kafka topic with id=%s is not found", d.Id())
+			// If the resource isn't available, Terraform destroys the resource in state.
+			d.SetId("")
+			return nil, nil
 		}
 
-		config := make(map[string]string)
-		for _, remoteConfig := range topicConfigList.Data {
-			// Extract configs that were set via terraform vs set by default
-			if remoteConfig.Source == kafkarestv3.CONFIGSOURCE_DYNAMIC_TOPIC_CONFIG && remoteConfig.Value != nil {
-				config[remoteConfig.Name] = *remoteConfig.Value
-			}
-		}
-		err = d.Set(paramConfigs, config)
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
+	}
+	if err := d.Set(paramClusterId, kafkaTopic.ClusterId); err != nil {
+		return nil, err
+	}
+	if err := d.Set(paramTopicName, kafkaTopic.TopicName); err != nil {
+		return nil, err
+	}
+	if err := d.Set(paramPartitionsCount, kafkaTopic.PartitionsCount); err != nil {
+		return nil, err
 	}
 
-	if err == nil {
-		err = setKafkaCredentials(c.clusterApiKey, c.clusterApiSecret, d)
+	configs, err := loadTopicConfigs(ctx, d, c, topicName)
+	if err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramHttpEndpoint, c.httpEndpoint)
+	if err := d.Set(paramConfigs, configs); err != nil {
+		return nil, err
+	}
+
+	if err := setKafkaCredentials(c.clusterApiKey, c.clusterApiSecret, d); err != nil {
+		return nil, err
+	}
+	if err := d.Set(paramHttpEndpoint, c.httpEndpoint); err != nil {
+		return nil, err
 	}
 	return []*schema.ResourceData{d}, err
 }
@@ -317,4 +306,21 @@ func setKafkaCredentials(kafkaApiKey, kafkaApiSecret string, d *schema.ResourceD
 		paramKey:    kafkaApiKey,
 		paramSecret: kafkaApiSecret,
 	}})
+}
+
+func loadTopicConfigs(ctx context.Context, d *schema.ResourceData, c *KafkaRestClient, topicName string) (map[string]string, error) {
+	topicConfigList, resp, err := c.apiClient.ConfigsV3Api.ListKafkaV3TopicConfigs(c.apiContext(ctx), c.clusterId, topicName)
+	if err != nil {
+		log.Printf("[ERROR] Kafka topic config get failed for id %s, %v, %s", d.Id(), resp, err)
+		return nil, err
+	}
+
+	config := make(map[string]string)
+	for _, remoteConfig := range topicConfigList.Data {
+		// Extract configs that were set via terraform vs set by default
+		if remoteConfig.Source == kafkarestv3.CONFIGSOURCE_DYNAMIC_TOPIC_CONFIG && remoteConfig.Value != nil {
+			config[remoteConfig.Name] = *remoteConfig.Value
+		}
+	}
+	return config, nil
 }
