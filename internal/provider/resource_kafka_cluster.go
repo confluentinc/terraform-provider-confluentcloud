@@ -303,18 +303,12 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	}
 
 	log.Printf("[DEBUG] Waiting for Kafka cluster provisioning to become %s", stateDone)
-	output, err := stateConf.WaitForStateContext(c.cmkApiContext(ctx))
+	_, err = stateConf.WaitForStateContext(c.cmkApiContext(ctx))
 	if err != nil {
 		return diag.Errorf("error waiting for Kafka cluster (%s) to be %s: %s", d.Id(), err, stateDone)
 	}
 
-	if err == nil {
-		err = d.Set(paramBootStrapEndpoint, output.(cmk.CmkV2Cluster).Spec.GetKafkaBootstrapEndpoint())
-	}
-	if err == nil {
-		err = d.Set(paramHttpEndpoint, output.(cmk.CmkV2Cluster).Spec.GetHttpEndpoint())
-	}
-	return createDiagnosticsWithDetails(err)
+	return kafkaRead(ctx, d, meta)
 }
 
 func kafkaProvisioned(ctx context.Context, c *Client, environmentId string, clusterId string) resource.StateRefreshFunc {
@@ -454,49 +448,61 @@ func readAndSetResourceConfigurationArguments(ctx context.Context, d *schema.Res
 	c := meta.(*Client)
 
 	cluster, resp, err := executeKafkaRead(c.cmkApiContext(ctx), c, environmentId, clusterId)
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		d.SetId("")
-		return nil, nil
-	}
 	if err != nil {
 		log.Printf("[ERROR] Kafka cluster get failed for id %s, %v, %s", clusterId, resp, err)
+
+		// https://learn.hashicorp.com/tutorials/terraform/provider-setup
+		isResourceNotFound := HasStatusNotFound(resp)
+		if isResourceNotFound {
+			log.Printf("[WARN] Kafka cluster with id=%s is not found", d.Id())
+			// If the resource isn't available, Terraform destroys the resource in state.
+			d.SetId("")
+			return nil, nil
+		}
+
 		return nil, err
 	}
 
-	err = d.Set(paramDisplayName, cluster.Spec.GetDisplayName())
-	if err == nil {
-		err = d.Set(paramAvailability, cluster.Spec.GetAvailability())
+	if err := d.Set(paramDisplayName, cluster.Spec.GetDisplayName()); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramCloud, cluster.Spec.GetCloud())
+	if err := d.Set(paramAvailability, cluster.Spec.GetAvailability()); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramRegion, cluster.Spec.GetRegion())
+	if err := d.Set(paramCloud, cluster.Spec.GetCloud()); err != nil {
+		return nil, err
+	}
+	if err := d.Set(paramRegion, cluster.Spec.GetRegion()); err != nil {
+		return nil, err
 	}
 
-	if err == nil {
-		if cluster.Spec.Config.CmkV2Basic != nil {
-			err = d.Set(paramBasicCluster, []interface{}{make(map[string]string)})
-		} else if cluster.Spec.Config.CmkV2Standard != nil {
-			err = d.Set(paramStandardCluster, []interface{}{make(map[string]string)})
-		} else if cluster.Spec.Config.CmkV2Dedicated != nil {
-			err = d.Set(paramDedicatedCluster, []interface{}{map[string]interface{}{
-				paramCku: cluster.Status.Cku,
-			}})
+	if cluster.Spec.Config.CmkV2Basic != nil {
+		if err := d.Set(paramBasicCluster, []interface{}{make(map[string]string)}); err != nil {
+			return nil, err
+		}
+	} else if cluster.Spec.Config.CmkV2Standard != nil {
+		if err := d.Set(paramStandardCluster, []interface{}{make(map[string]string)}); err != nil {
+			return nil, err
+		}
+	} else if cluster.Spec.Config.CmkV2Dedicated != nil {
+		if err := d.Set(paramDedicatedCluster, []interface{}{map[string]interface{}{
+			paramCku: cluster.Status.Cku,
+		}}); err != nil {
+			return nil, err
 		}
 	}
 
-	if err == nil {
-		err = d.Set(paramBootStrapEndpoint, cluster.Spec.GetKafkaBootstrapEndpoint())
+	if err := d.Set(paramBootStrapEndpoint, cluster.Spec.GetKafkaBootstrapEndpoint()); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = d.Set(paramHttpEndpoint, cluster.Spec.GetHttpEndpoint())
+	if err := d.Set(paramHttpEndpoint, cluster.Spec.GetHttpEndpoint()); err != nil {
+		return nil, err
 	}
-	if err == nil {
-		err = setEnvironmentId(environmentId, d)
+	if err := setEnvironmentId(environmentId, d); err != nil {
+		return nil, err
 	}
 
-	return []*schema.ResourceData{d}, err
+	return []*schema.ResourceData{d}, nil
 }
 
 func basicClusterSchema() *schema.Schema {
