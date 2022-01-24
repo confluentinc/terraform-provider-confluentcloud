@@ -134,11 +134,7 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		updateReq.SetSpec(*updateSpec)
 		req := c.cmkClient.ClustersCmkV2Api.UpdateCmkV2Cluster(c.cmkApiContext(ctx), d.Id()).CmkV2ClusterUpdate(*updateReq)
 
-		cluster, _, err := req.Execute()
-
-		if err == nil {
-			err = d.Set(paramDisplayName, cluster.Spec.DisplayName)
-		}
+		_, _, err := req.Execute()
 
 		if err != nil {
 			return createDiagnosticsWithDetails(err)
@@ -159,24 +155,12 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		updateReq.SetSpec(*updateSpec)
 		req := c.cmkClient.ClustersCmkV2Api.UpdateCmkV2Cluster(c.cmkApiContext(ctx), d.Id()).CmkV2ClusterUpdate(*updateReq)
 
-		cluster, _, err := req.Execute()
-
-		if err == nil && cluster.Spec.Config.CmkV2Standard != nil {
-			err = d.Set(paramStandardCluster, []interface{}{make(map[string]string)})
-		}
+		_, _, err := req.Execute()
 
 		if err != nil {
 			return createDiagnosticsWithDetails(err)
 		}
 	} else if isForbiddenStandardBasicDowngrade || isForbiddenDedicatedUpdate {
-		// Revert the cluster type in TF state
-		log.Printf("[WARN] Reverting Kafka cluster (%s) type", d.Id())
-		oldBasicClusterConfig, _ := d.GetChange(paramBasicCluster)
-		oldStandardClusterConfig, _ := d.GetChange(paramStandardCluster)
-		oldDedicatedClusterConfig, _ := d.GetChange(paramDedicatedCluster)
-		_ = d.Set(paramBasicCluster, oldBasicClusterConfig)
-		_ = d.Set(paramStandardCluster, oldStandardClusterConfig)
-		_ = d.Set(paramDedicatedCluster, oldDedicatedClusterConfig)
 		return diag.Errorf("clusters can only be upgraded from 'Basic' to 'Standard'")
 	}
 
@@ -217,19 +201,13 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		}
 
 		log.Printf("[DEBUG] Waiting for Kafka cluster CKU update to complete")
-		output, err := stateConf.WaitForStateContext(c.cmkApiContext(ctx))
+		_, err = stateConf.WaitForStateContext(c.cmkApiContext(ctx))
 		if err != nil {
 			return diag.Errorf("error waiting for CKU update of Kafka cluster (%s): %s", d.Id(), err)
 		}
-		err = d.Set(paramDedicatedCluster, []interface{}{map[string]interface{}{
-			paramCku: output.(cmk.CmkV2Cluster).Status.Cku,
-		}})
-		if err != nil {
-			return createDiagnosticsWithDetails(err)
-		}
 	}
 
-	return createDiagnosticsWithDetails(err)
+	return kafkaRead(ctx, d, meta)
 }
 
 func executeKafkaCreate(ctx context.Context, c *Client, cluster *cmk.CmkV2Cluster) (cmk.CmkV2Cluster, *http.Response, error) {
@@ -476,6 +454,18 @@ func readAndSetResourceConfigurationArguments(ctx context.Context, d *schema.Res
 		return nil, err
 	}
 
+	// Reset all 3 cluster types since only one of these 3 should be set
+	if err := d.Set(paramBasicCluster, []interface{}{}); err != nil {
+		return nil, err
+	}
+	if err := d.Set(paramStandardCluster, []interface{}{}); err != nil {
+		return nil, err
+	}
+	if err := d.Set(paramDedicatedCluster, []interface{}{}); err != nil {
+		return nil, err
+	}
+
+	// Set a specific cluster type
 	if cluster.Spec.Config.CmkV2Basic != nil {
 		if err := d.Set(paramBasicCluster, []interface{}{make(map[string]string)}); err != nil {
 			return nil, err
