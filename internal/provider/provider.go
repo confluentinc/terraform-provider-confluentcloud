@@ -108,6 +108,9 @@ func New(version string) func() *schema.Provider {
 					},
 				},
 			},
+			DataSourcesMap: map[string]*schema.Resource{
+				"confluentcloud_service_account": serviceAccountDataSource(),
+			},
 			ResourcesMap: map[string]*schema.Resource{
 				"confluentcloud_kafka_cluster":   kafkaResource(),
 				"confluentcloud_environment":     environmentResource(),
