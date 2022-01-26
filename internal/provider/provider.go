@@ -109,6 +109,7 @@ func New(version string) func() *schema.Provider {
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
+				"confluentcloud_environment":     environmentDataSource(),
 				"confluentcloud_service_account": serviceAccountDataSource(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
