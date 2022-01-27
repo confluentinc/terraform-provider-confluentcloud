@@ -42,6 +42,7 @@ const (
 	paramBootStrapEndpoint    = "bootstrap_endpoint"
 	paramHttpEndpoint         = "http_endpoint"
 	paramCku                  = "cku"
+	paramRbacCrn              = "rbac_crn"
 
 	stateInProgress = "in-progress"
 	stateDone       = "done"
@@ -109,6 +110,12 @@ func kafkaResource() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Description: "The REST endpoint of the Kafka cluster.",
+			},
+			paramRbacCrn: {
+				Type:     schema.TypeString,
+				Computed: true,
+				Description: "The Confluent Resource Name of the Kafka cluster suitable for " +
+					"confluentcloud_role_binding's crn_pattern.",
 			},
 			paramEnvironment: environmentSchema(),
 		},
@@ -486,6 +493,14 @@ func readAndSetResourceConfigurationArguments(ctx context.Context, d *schema.Res
 		return nil, err
 	}
 	if err := d.Set(paramHttpEndpoint, cluster.Spec.GetHttpEndpoint()); err != nil {
+		return nil, err
+	}
+	rbacCrn, err := clusterCrnToRbacClusterCrn(cluster.Metadata.GetResourceName())
+	if err != nil {
+		log.Printf("[ERROR] Could not construct %s for kafka cluster with id=%s", paramRbacCrn, d.Id())
+		return nil, err
+	}
+	if err := d.Set(paramRbacCrn, rbacCrn); err != nil {
 		return nil, err
 	}
 	if err := setEnvironmentId(environmentId, d); err != nil {

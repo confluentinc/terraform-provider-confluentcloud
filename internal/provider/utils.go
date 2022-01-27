@@ -34,6 +34,8 @@ import (
 	"time"
 )
 
+const crnKafkaSuffix = "/kafka="
+
 func (c *Client) cmkApiContext(ctx context.Context) context.Context {
 	if c.apiKey != "" && c.apiSecret != "" {
 		return context.WithValue(context.Background(), cmk.ContextBasicAuth, cmk.BasicAuth{
@@ -400,4 +402,16 @@ func saResourceIdToSaIntegerId(c *Client, saResourceId string) (int, error) {
 		}
 	}
 	return 0, fmt.Errorf("the service account with resource ID=%s was not found", saResourceId)
+}
+
+func clusterCrnToRbacClusterCrn(clusterCrn string) (string, error) {
+	// Converts
+	// crn://confluent.cloud/organization=./environment=./cloud-cluster=lkc-198rjz/kafka=lkc-198rjz
+	// to
+	// crn://confluent.cloud/organization=./environment=./cloud-cluster=lkc-198rjz
+	lastIndex := strings.LastIndex(clusterCrn, crnKafkaSuffix)
+	if lastIndex == -1 {
+		return "", fmt.Errorf("could not find %s in %s", crnKafkaSuffix, clusterCrn)
+	}
+	return clusterCrn[:lastIndex], nil
 }

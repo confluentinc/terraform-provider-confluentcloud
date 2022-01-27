@@ -44,6 +44,7 @@ const (
 	kafkaResourceLabel               = "basic-cluster"
 	kafkaHttpEndpoint                = "https://pkc-0wg55.us-central1.gcp.confluent.cloud:443"
 	kafkaBootstrapEndpoint           = "SASL_SSL://pkc-0wg55.us-central1.gcp.confluent.cloud:9092"
+	kafkaRbacCrn                     = "crn://confluent.cloud/organization=1111aaaa-11aa-11aa-11aa-111111aaaaaa/environment=env-1jrymj/cloud-cluster=lkc-19ynpv"
 )
 
 var createKafkaPath = "/cmk/v2/clusters"
@@ -173,6 +174,7 @@ func TestAccCluster(t *testing.T) {
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "environment.#", "1"),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "environment.0.id", kafkaEnvId),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "http_endpoint", kafkaHttpEndpoint),
+					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "rbac_crn", kafkaRbacCrn),
 				),
 			},
 			{
@@ -190,6 +192,7 @@ func TestAccCluster(t *testing.T) {
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "environment.#", "1"),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "environment.0.id", kafkaEnvId),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "http_endpoint", kafkaHttpEndpoint),
+					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "rbac_crn", kafkaRbacCrn),
 				),
 			},
 			{
