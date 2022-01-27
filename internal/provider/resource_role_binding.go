@@ -31,7 +31,7 @@ const (
 	paramCrnPattern = "crn_pattern"
 )
 
-var acceptedRbacRoleNames = []string{"MetricsViewer", "CloudClusterAdmin", "OrganizationAdmin", "EnvironmentAdmin","ResourceOwner","DeveloperRead","DeveloperWrite","DeveloperManage","Operator","AuditAdmin","SecurityAdmin","UserAdmin","SystemAdmin"}
+var acceptedRbacRoleNames = []string{"MetricsViewer", "CloudClusterAdmin", "OrganizationAdmin", "EnvironmentAdmin", "ResourceOwner", "DeveloperRead", "DeveloperWrite", "DeveloperManage", "Operator", "AuditAdmin", "SecurityAdmin", "UserAdmin", "SystemAdmin"}
 
 func roleBindingResource() *schema.Resource {
 	return &schema.Resource{
