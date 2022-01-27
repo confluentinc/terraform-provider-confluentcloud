@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/antihax/optional v1.0.0
 	github.com/confluentinc/ccloud-sdk-go-v2/cmk v0.3.0
-	github.com/confluentinc/ccloud-sdk-go-v2/iam v0.4.0
+	github.com/confluentinc/ccloud-sdk-go-v2/iam v0.5.0
 	github.com/confluentinc/ccloud-sdk-go-v2/kafkarest v0.3.0
 	github.com/confluentinc/ccloud-sdk-go-v2/mds v0.3.0
 	github.com/confluentinc/ccloud-sdk-go-v2/org v0.4.0

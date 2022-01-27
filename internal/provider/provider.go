@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	cmk "github.com/confluentinc/ccloud-sdk-go-v2/cmk/v2"
+	iamv1 "github.com/confluentinc/ccloud-sdk-go-v2/iam/v1"
 	iam "github.com/confluentinc/ccloud-sdk-go-v2/iam/v2"
 	mds "github.com/confluentinc/ccloud-sdk-go-v2/mds/v2"
 	org "github.com/confluentinc/ccloud-sdk-go-v2/org/v2"
@@ -46,6 +47,7 @@ const (
 
 type Client struct {
 	iamClient              *iam.APIClient
+	iamV1Client            *iamv1.APIClient
 	cmkClient              *cmk.APIClient
 	orgClient              *org.APIClient
 	kafkaRestClientFactory *KafkaRestClientFactory
@@ -190,27 +192,32 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 
 	cmkCfg := cmk.NewConfiguration()
 	iamCfg := iam.NewConfiguration()
+	iamV1Cfg := iamv1.NewConfiguration()
 	mdsCfg := mds.NewConfiguration()
 	orgCfg := org.NewConfiguration()
 
 	cmkCfg.Servers[0].URL = endpoint
 	iamCfg.Servers[0].URL = endpoint
+	iamV1Cfg.Servers[0].URL = endpoint
 	mdsCfg.Servers[0].URL = endpoint
 	orgCfg.Servers[0].URL = endpoint
 
 	cmkCfg.UserAgent = userAgent
 	iamCfg.UserAgent = userAgent
+	iamV1Cfg.UserAgent = userAgent
 	mdsCfg.UserAgent = userAgent
 	orgCfg.UserAgent = userAgent
 
 	cmkCfg.HTTPClient = createRetryableHttpClientWithExponentialBackoff()
 	iamCfg.HTTPClient = createRetryableHttpClientWithExponentialBackoff()
+	iamV1Cfg.HTTPClient = createRetryableHttpClientWithExponentialBackoff()
 	mdsCfg.HTTPClient = createRetryableHttpClientWithExponentialBackoff()
 	orgCfg.HTTPClient = createRetryableHttpClientWithExponentialBackoff()
 
 	client := Client{
 		cmkClient:              cmk.NewAPIClient(cmkCfg),
 		iamClient:              iam.NewAPIClient(iamCfg),
+		iamV1Client:            iamv1.NewAPIClient(iamV1Cfg),
 		orgClient:              org.NewAPIClient(orgCfg),
 		kafkaRestClientFactory: &KafkaRestClientFactory{userAgent: userAgent},
 		mdsClient:              mds.NewAPIClient(mdsCfg),

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	cmk "github.com/confluentinc/ccloud-sdk-go-v2/cmk/v2"
+	iamv1 "github.com/confluentinc/ccloud-sdk-go-v2/iam/v1"
 	iam "github.com/confluentinc/ccloud-sdk-go-v2/iam/v2"
 	kafkarestv3 "github.com/confluentinc/ccloud-sdk-go-v2/kafkarest/v3"
 	mds "github.com/confluentinc/ccloud-sdk-go-v2/mds/v2"
@@ -47,6 +48,17 @@ func (c *Client) cmkApiContext(ctx context.Context) context.Context {
 func (c *Client) iamApiContext(ctx context.Context) context.Context {
 	if c.apiKey != "" && c.apiSecret != "" {
 		return context.WithValue(context.Background(), iam.ContextBasicAuth, iam.BasicAuth{
+			UserName: c.apiKey,
+			Password: c.apiSecret,
+		})
+	}
+	log.Printf("[WARN] Could not find credentials for Confluent Cloud")
+	return ctx
+}
+
+func (c *Client) iamV1ApiContext(ctx context.Context) context.Context {
+	if c.apiKey != "" && c.apiSecret != "" {
+		return context.WithValue(context.Background(), iamv1.ContextBasicAuth, iamv1.BasicAuth{
 			UserName: c.apiKey,
 			Password: c.apiSecret,
 		})
@@ -356,4 +368,36 @@ func HasStatusForbidden(response *http.Response) bool {
 // Reports whether the response has http.StatusNotFound status
 func HasStatusNotFound(response *http.Response) bool {
 	return response != nil && response.StatusCode == http.StatusNotFound
+}
+
+// APIF-2043: TEMPORARY METHOD
+// Converts principal with a resourceID (User:sa-01234) to principal with an integer ID (User:6789)
+func principalWithResourceIdToPrincipalWithIntegerId(c *Client, principalWithResourceId string) (string, error) {
+	// There's input validation that principal attribute must start with "User:sa-"
+	// User:sa-abc123 -> sa-abc123
+	resourceId := principalWithResourceId[5:]
+	integerId, err := saResourceIdToSaIntegerId(c, resourceId)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s%d", principalPrefix, integerId), nil
+}
+
+// APIF-2043: TEMPORARY METHOD
+// Converts service account's resourceID (sa-abc123) to its integer ID (67890)
+func saResourceIdToSaIntegerId(c *Client, saResourceId string) (int, error) {
+	list, _, err := c.iamV1Client.ServiceAccountsV1Api.ListV1ServiceAccounts(c.iamV1ApiContext(context.Background())).Execute()
+	if err != nil {
+		return 0, err
+	}
+	for _, sa := range list.GetUsers() {
+		if sa.ResourceId != nil && *sa.ResourceId == saResourceId {
+			if sa.Id != nil {
+				return int(*sa.Id), nil
+			} else {
+				return 0, fmt.Errorf("the matching integer ID for a service account with resource ID=%s is nil", saResourceId)
+			}
+		}
+	}
+	return 0, fmt.Errorf("the service account with resource ID=%s was not found", saResourceId)
 }

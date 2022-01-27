@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -35,6 +36,8 @@ const (
 	paramHost         = "host"
 	paramOperation    = "operation"
 	paramPermission   = "permission"
+
+	principalPrefix = "User:"
 )
 
 var acceptedResourceTypes = []string{"UNKNOWN", "ANY", "TOPIC", "GROUP", "CLUSTER", "TRANSACTIONAL_ID", "DELEGATION_TOKEN"}
@@ -102,10 +105,11 @@ func kafkaAclResource() *schema.Resource {
 				ValidateFunc: validation.StringInSlice(acceptedPatternTypes, false),
 			},
 			paramPrincipal: {
-				Type:        schema.TypeString,
-				Required:    true,
-				ForceNew:    true,
-				Description: "The principal for the ACL.",
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				Description:  "The principal for the ACL.",
+				ValidateFunc: validation.StringMatch(regexp.MustCompile("^User:sa-"), "the principal must start with 'User:sa-'"),
 			},
 			paramHost: {
 				Type:        schema.TypeString,
@@ -151,11 +155,17 @@ func kafkaAclCreate(ctx context.Context, d *schema.ResourceData, meta interface{
 	if err != nil {
 		return createDiagnosticsWithDetails(err)
 	}
+	// APIF-2038: Kafka REST API only accepts integer ID at the moment
+	c := meta.(*Client)
+	principalWithIntegerId, err := principalWithResourceIdToPrincipalWithIntegerId(c, acl.Principal)
+	if err != nil {
+		return createDiagnosticsWithDetails(err)
+	}
 	kafkaAclRequestData := kafkarestv3.CreateAclRequestData{
 		ResourceType: acl.ResourceType,
 		ResourceName: acl.ResourceName,
 		PatternType:  acl.PatternType,
-		Principal:    acl.Principal,
+		Principal:    principalWithIntegerId,
 		Host:         acl.Host,
 		Operation:    acl.Operation,
 		Permission:   acl.Permission,
@@ -195,11 +205,19 @@ func kafkaAclDelete(ctx context.Context, d *schema.ResourceData, meta interface{
 	if err != nil {
 		return createDiagnosticsWithDetails(err)
 	}
+
+	// APIF-2038: Kafka REST API only accepts integer ID at the moment
+	client := meta.(*Client)
+	principalWithIntegerId, err := principalWithResourceIdToPrincipalWithIntegerId(client, acl.Principal)
+	if err != nil {
+		return createDiagnosticsWithDetails(err)
+	}
+
 	opts := &kafkarestv3.DeleteKafkaV3AclsOpts{
 		ResourceType: optional.NewInterface(acl.ResourceType),
 		ResourceName: optional.NewString(acl.ResourceName),
 		PatternType:  optional.NewInterface(acl.PatternType),
-		Principal:    optional.NewString(acl.Principal),
+		Principal:    optional.NewString(principalWithIntegerId),
 		Host:         optional.NewString(acl.Host),
 		Operation:    optional.NewInterface(acl.Operation),
 		Permission:   optional.NewInterface(acl.Permission),
@@ -227,13 +245,24 @@ func kafkaAclRead(ctx context.Context, d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return createDiagnosticsWithDetails(err)
 	}
+	client := meta.(*Client)
 	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
 	acl, err := extractAcl(d)
 	if err != nil {
 		return createDiagnosticsWithDetails(err)
 	}
 
-	_, err = readAndSetAclResourceConfigurationArguments(ctx, d, kafkaRestClient, acl)
+	// APIF-2043: TEMPORARY CODE for v0.x.0 -> v0.4.0 migration
+	// Destroy the resource in terraform state if it uses integerId for a principal.
+	// This hack is necessary since terraform plan will use the principal's value (integerId) from terraform.state
+	// instead of using the new provided resourceId from main.tf (the user will be forced to replace integerId with resourceId
+	// that we have an input validation for using "User:sa-" for principal attribute.
+	if !strings.HasPrefix(acl.Principal, "User:sa-") {
+		d.SetId("")
+		return nil
+	}
+
+	_, err = readAndSetAclResourceConfigurationArguments(ctx, d, client, kafkaRestClient, acl)
 
 	return createDiagnosticsWithDetails(err)
 }
@@ -250,12 +279,18 @@ func createKafkaAclId(clusterId string, acl Acl) string {
 	}, "#"))
 }
 
-func readAndSetAclResourceConfigurationArguments(ctx context.Context, d *schema.ResourceData, c *KafkaRestClient, acl Acl) ([]*schema.ResourceData, error) {
+func readAndSetAclResourceConfigurationArguments(ctx context.Context, d *schema.ResourceData, client *Client, c *KafkaRestClient, acl Acl) ([]*schema.ResourceData, error) {
+	// APIF-2038: Kafka REST API only accepts integer ID at the moment
+	principalWithIntegerId, err := principalWithResourceIdToPrincipalWithIntegerId(client, acl.Principal)
+	if err != nil {
+		return nil, err
+	}
+
 	opts := &kafkarestv3.GetKafkaV3AclsOpts{
 		ResourceType: optional.NewInterface(acl.ResourceType),
 		ResourceName: optional.NewString(acl.ResourceName),
 		PatternType:  optional.NewInterface(acl.PatternType),
-		Principal:    optional.NewString(acl.Principal),
+		Principal:    optional.NewString(principalWithIntegerId),
 		Host:         optional.NewString(acl.Host),
 		Operation:    optional.NewInterface(acl.Operation),
 		Permission:   optional.NewInterface(acl.Permission),
@@ -294,7 +329,8 @@ func readAndSetAclResourceConfigurationArguments(ctx context.Context, d *schema.
 	if err := d.Set(paramPatternType, matchedAcl.PatternType); err != nil {
 		return nil, err
 	}
-	if err := d.Set(paramPrincipal, matchedAcl.Principal); err != nil {
+	// Use principal with resource ID
+	if err := d.Set(paramPrincipal, acl.Principal); err != nil {
 		return nil, err
 	}
 	if err := d.Set(paramHost, matchedAcl.Host); err != nil {
@@ -340,9 +376,10 @@ func kafkaAclImport(ctx context.Context, d *schema.ResourceData, meta interface{
 		return nil, err
 	}
 
+	client := meta.(*Client)
 	kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(kafkaImportEnvVars.kafkaHttpEndpoint, clusterId, kafkaImportEnvVars.kafkaApiKey, kafkaImportEnvVars.kafkaApiSecret)
 
-	return readAndSetAclResourceConfigurationArguments(ctx, d, kafkaRestClient, acl)
+	return readAndSetAclResourceConfigurationArguments(ctx, d, client, kafkaRestClient, acl)
 }
 
 func deserializeAcl(serializedAcl string) (Acl, error) {

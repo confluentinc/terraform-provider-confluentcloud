@@ -37,7 +37,8 @@ const (
 	aclScenarioName                = "confluentcloud_kafka_acl Resource Lifecycle"
 	aclPatternType                 = "LITERAL"
 	aclResourceName                = "kafka-cluster"
-	aclPrincipal                   = "User:732363"
+	aclPrincipalWithIntegerId      = "User:732363"
+	aclPrincipalWithResourceId     = "User:sa-abc123"
 	aclHost                        = "*"
 	aclOperation                   = "READ"
 	aclPermission                  = "ALLOW"
@@ -47,7 +48,8 @@ const (
 
 var fullAclResourceLabel = fmt.Sprintf("confluentcloud_kafka_acl.%s", aclResourceLabel)
 var createKafkaAclPath = fmt.Sprintf("/kafka/v3/clusters/%s/acls", clusterId)
-var readKafkaAclPath = fmt.Sprintf("/kafka/v3/clusters/%s/acls?host=%s&operation=%s&pattern_type=%s&permission=%s&principal=%s&resource_name=%s&resource_type=%s", clusterId, aclHost, aclOperation, aclPatternType, aclPermission, aclPrincipal, aclResourceName, aclResourceType)
+var readServiceAccountsPath = "/service_accounts"
+var readKafkaAclPath = fmt.Sprintf("/kafka/v3/clusters/%s/acls?host=%s&operation=%s&pattern_type=%s&permission=%s&principal=%s&resource_name=%s&resource_type=%s", clusterId, aclHost, aclOperation, aclPatternType, aclPermission, aclPrincipalWithIntegerId, aclResourceName, aclResourceType)
 
 // TODO: APIF-1990
 var mockAclTestServerUrl = ""
@@ -79,13 +81,24 @@ func TestAccAcls(t *testing.T) {
 	require.NoError(t, err)
 
 	mockAclTestServerUrl = fmt.Sprintf("http://%s:%s", host, wiremockHttpMappedPort.Port())
-	confluentCloudBaseUrl := ""
+	confluentCloudBaseUrl := mockAclTestServerUrl
 	wiremockClient := wiremock.NewClient(mockAclTestServerUrl)
 	// nolint:errcheck
 	defer wiremockClient.Reset()
 
 	// nolint:errcheck
 	defer wiremockClient.ResetAllScenarios()
+
+	readServiceAccountsResponse, _ := ioutil.ReadFile("../testdata/kafka_acl/read_service_accounts.json")
+	readServiceAccountsStub := wiremock.Get(wiremock.URLPathEqualTo(readServiceAccountsPath)).
+		InScenario(aclScenarioName).
+		WillReturn(
+			string(readServiceAccountsResponse),
+			contentTypeJSONHeader,
+			http.StatusOK,
+		)
+	_ = wiremockClient.StubFor(readServiceAccountsStub)
+
 	createAclStub := wiremock.Post(wiremock.URLPathEqualTo(createKafkaAclPath)).
 		InScenario(aclScenarioName).
 		WhenScenarioStateIs(wiremock.ScenarioStateStarted).
@@ -102,7 +115,7 @@ func TestAccAcls(t *testing.T) {
 		WithQueryParam("operation", wiremock.EqualTo(aclOperation)).
 		WithQueryParam("pattern_type", wiremock.EqualTo(aclPatternType)).
 		WithQueryParam("permission", wiremock.EqualTo(aclPermission)).
-		WithQueryParam("principal", wiremock.EqualTo(aclPrincipal)).
+		WithQueryParam("principal", wiremock.EqualTo(aclPrincipalWithIntegerId)).
 		WithQueryParam("resource_name", wiremock.EqualTo(aclResourceName)).
 		WithQueryParam("resource_type", wiremock.EqualTo(aclResourceType)).
 		InScenario(aclScenarioName).
@@ -119,7 +132,7 @@ func TestAccAcls(t *testing.T) {
 		WithQueryParam("operation", wiremock.EqualTo(aclOperation)).
 		WithQueryParam("pattern_type", wiremock.EqualTo(aclPatternType)).
 		WithQueryParam("permission", wiremock.EqualTo(aclPermission)).
-		WithQueryParam("principal", wiremock.EqualTo(aclPrincipal)).
+		WithQueryParam("principal", wiremock.EqualTo(aclPrincipalWithIntegerId)).
 		WithQueryParam("resource_name", wiremock.EqualTo(aclResourceName)).
 		WithQueryParam("resource_type", wiremock.EqualTo(aclResourceType)).
 		InScenario(aclScenarioName).
@@ -136,7 +149,7 @@ func TestAccAcls(t *testing.T) {
 		WithQueryParam("operation", wiremock.EqualTo(aclOperation)).
 		WithQueryParam("pattern_type", wiremock.EqualTo(aclPatternType)).
 		WithQueryParam("permission", wiremock.EqualTo(aclPermission)).
-		WithQueryParam("principal", wiremock.EqualTo(aclPrincipal)).
+		WithQueryParam("principal", wiremock.EqualTo(aclPrincipalWithIntegerId)).
 		WithQueryParam("resource_name", wiremock.EqualTo(aclResourceName)).
 		WithQueryParam("resource_type", wiremock.EqualTo(aclResourceType)).
 		InScenario(aclScenarioName).
@@ -171,11 +184,11 @@ func TestAccAcls(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckAclExists(fullAclResourceLabel),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "kafka_cluster", clusterId),
-					resource.TestCheckResourceAttr(fullAclResourceLabel, "id", fmt.Sprintf("%s/%s#%s#%s#%s#%s#%s#%s", clusterId, aclResourceType, aclResourceName, aclPatternType, aclPrincipal, aclHost, aclOperation, aclPermission)),
+					resource.TestCheckResourceAttr(fullAclResourceLabel, "id", fmt.Sprintf("%s/%s#%s#%s#%s#%s#%s#%s", clusterId, aclResourceType, aclResourceName, aclPatternType, aclPrincipalWithResourceId, aclHost, aclOperation, aclPermission)),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "resource_type", aclResourceType),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "resource_name", aclResourceName),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "pattern_type", aclPatternType),
-					resource.TestCheckResourceAttr(fullAclResourceLabel, "principal", aclPrincipal),
+					resource.TestCheckResourceAttr(fullAclResourceLabel, "principal", aclPrincipalWithResourceId),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "host", aclHost),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "operation", aclOperation),
 					resource.TestCheckResourceAttr(fullAclResourceLabel, "permission", aclPermission),
@@ -241,7 +254,7 @@ func testAccCheckAclConfig(confluentCloudBaseUrl, mockServerUrl string) string {
 		secret = "test_secret"
 	  }
 	}
-	`, confluentCloudBaseUrl, aclResourceLabel, clusterId, aclResourceType, aclResourceName, aclPatternType, aclPrincipal,
+	`, confluentCloudBaseUrl, aclResourceLabel, clusterId, aclResourceType, aclResourceName, aclPatternType, aclPrincipalWithResourceId,
 		aclOperation, aclPermission, mockServerUrl)
 }
 

@@ -144,8 +144,8 @@ github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGX
 github.com/cockroachdb/datadriven v0.0.0-20190809214429-80d97fb3cbaa/go.mod h1:zn76sxSg3SzpJ0PPJaLDCu+Bu0Lg3sKTORVIj19EIF8=
 github.com/confluentinc/ccloud-sdk-go-v2/cmk v0.3.0 h1:pBCZP0R4bw93BJLtNXeBzSJUou34bm4EFxK3wK+17UQ=
 github.com/confluentinc/ccloud-sdk-go-v2/cmk v0.3.0/go.mod h1:357Zo3HvVAe5iQgUFxUbQPAKJasGm8vFMkOB+krVmR8=
-github.com/confluentinc/ccloud-sdk-go-v2/iam v0.4.0 h1:e3gxV47K0Axjzog9u6p9W+XbE5K7BPXfeayi60Gjdrc=
-github.com/confluentinc/ccloud-sdk-go-v2/iam v0.4.0/go.mod h1:2Lm82ly9Yh5LLhp8OTnUGqjz4JdIXAZ5a0/u9T+rGGU=
+github.com/confluentinc/ccloud-sdk-go-v2/iam v0.5.0 h1:d4Ca5F9nGk3+lDLq+ofaH0Xb1gAKditTl+EMZDzgu1I=
+github.com/confluentinc/ccloud-sdk-go-v2/iam v0.5.0/go.mod h1:2Lm82ly9Yh5LLhp8OTnUGqjz4JdIXAZ5a0/u9T+rGGU=
 github.com/confluentinc/ccloud-sdk-go-v2/kafkarest v0.3.0 h1:SoH721t+NGT5Lxxn0sj9DO9YvS2CPh3FdN/+iBKmWAI=
 github.com/confluentinc/ccloud-sdk-go-v2/kafkarest v0.3.0/go.mod h1:+3crwD4MWa0CGGuyEixXMeLNy0VIRTbxezSduM33qbg=
 github.com/confluentinc/ccloud-sdk-go-v2/mds v0.3.0 h1:DaipFGVdZjAE8eSztUrA/4b74kj6k5lZ0EJmK1RqccU=
