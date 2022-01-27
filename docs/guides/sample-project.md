@@ -35,14 +35,14 @@ you need to access Confluent Cloud programmatically.
 
 1.  Create a Cloud API key and secret by using the
     [Confluent Cloud Console](https://confluent.cloud/settings/api-keys) or the
-    [Confluent Cloud CLI](https://docs.confluent.io/ccloud-cli/current/command-reference/api-key/ccloud_api-key_create.html).
+    [Confluent CLI](https://docs.confluent.io/confluent-cli/current/command-reference/api-key/confluent_api-key_create.html).
     They're required for creating any Confluent Cloud resources.
 
-    If you're using the Confluent Cloud CLI, the following command creates your
+    If you're using the Confluent CLI, the following command creates your
     API key and secret.
 
     ```bash
-    ccloud api-key create --resource "cloud" 
+    confluent api-key create --resource "cloud" 
     ```
 
     Save your API key and secret in a secure location.
@@ -144,23 +144,7 @@ Kafka cluster.
 
 You can find the created resources (and their IDs: `sa-***`, `env-***`, `lkc-***` 
 from Terraform output) on both [Cloud Console](https://confluent.cloud/environments) and
-[Confluent Cloud CLI](https://docs.confluent.io/ccloud-cli/current/index.html):
-
-The following steps show how to get the integer identifier for the `confluentcloud_service_account` resource that you'll use in later steps.  
-
-### Use the Confluent Cloud Console to inspect your resources
-
-The following steps show how to get the integer identifier for the `confluentcloud_service_account` resource by using
-the Cloud Console.
-
-1.  Log in to your [Confluent Cloud account](https://confluent.cloud/login).
-
-2.  Open the [Accounts and access tab](https://confluent.cloud/settings/org/accounts/service-accounts)
-    and click **test-sa**. Copy the integer from the URL. For example, 
-    in this URL, `https://confluent.cloud/settings/org/accounts/service-accounts/309715/settings`, 
-    the ID is `309715`.
-
-3.  Save the service account ID.
+[Confluent CLI](https://docs.confluent.io/confluent-cli/current/overview.html).
 
 ## Run Terraform to create a Kafka topic
 
@@ -176,7 +160,7 @@ Terraform file to create a topic and its related ACLs.
 
 Create an API key and secret for the Kafka cluster by using the
 [Confluent Cloud Console](https://confluent.cloud/settings/api-keys) or the
-[Confluent Cloud CLI](https://docs.confluent.io/ccloud-cli/current/command-reference/api-key/ccloud_api-key_create.html).
+[Confluent CLI](https://docs.confluent.io/confluent-cli/current/command-reference/api-key/confluent_api-key_create.html).
 The Kafka API key is distinct from the Cloud API key and is required for
 creating Kafka topics and ACLs.
 
@@ -195,11 +179,11 @@ The following steps show how to create a Kafka API key by using the Cloud Consol
 
 ### Use the Cloud CLI to get your Kafka API key
 
-If you're using the Confluent Cloud CLI, the following command creates your
+If you're using the Confluent CLI, the following command creates your
 API key and secret. Replace `<cluster_id>` and `<env_id>` with your cluster ID and environment ID respectively.
 
 ```bash
-ccloud api-key create --resource <cluster_id> --environment <env_id> 
+confluent api-key create --resource <cluster_id> --environment <env_id> 
 ```
 
 Save your Kafka API key and secret in a secure location.
@@ -207,8 +191,7 @@ Save your Kafka API key and secret in a secure location.
 ### Add your Kafka API key to a Terraform file
 
 1.  Create a new file named `variables.tf` and copy the following template into
-    it. In each `variable` block, set `default` to the corresponding property value.
-    `service_account_int_id` variables.
+    it.
 
     ```terraform
 
@@ -223,10 +206,6 @@ Save your Kafka API key and secret in a secure location.
       sensitive = true  
     }
 
-    variable "service_account_int_id" {
-      type = number
-      description = "Service Account Integer ID"
-    }
     ```
 
 2.  Create a new file named `terraform.tfvars` and copy the following into it.
@@ -238,7 +217,6 @@ Save your Kafka API key and secret in a secure location.
     ```terraform
     kafka_api_key="<key>"
     kafka_api_secret="<secret>"
-    service_account_int_id=<id>
     ```
 
     -> **Note:** Quotation marks are required around the API key and secret strings.
@@ -267,7 +245,7 @@ Save your Kafka API key and secret in a secure location.
       resource_type = "TOPIC"
       resource_name = confluentcloud_kafka_topic.orders.topic_name
       pattern_type = "LITERAL"
-      principal = "User:${var.service_account_int_id}"
+      principal = "User:${confluentcloud_service_account.test-sa.id}"
       operation = "DESCRIBE"
       permission = "ALLOW"
       http_endpoint = confluentcloud_kafka_cluster.test-basic-cluster.http_endpoint
@@ -282,7 +260,7 @@ Save your Kafka API key and secret in a secure location.
       resource_type = "CLUSTER"
       resource_name = "kafka-cluster"
       pattern_type = "LITERAL"
-      principal = "User:${var.service_account_int_id}"
+      principal = "User:${confluentcloud_service_account.test-sa.id}"
       operation = "DESCRIBE"
       permission = "ALLOW"
       http_endpoint = confluentcloud_kafka_cluster.test-basic-cluster.http_endpoint
@@ -312,10 +290,10 @@ Save your Kafka API key and secret in a secure location.
     ```
     confluentcloud_kafka_acl.describe-test-basic-cluster: Creating...
     confluentcloud_kafka_topic.orders: Creating...
-    confluentcloud_kafka_acl.describe-test-basic-cluster: Creation complete after 1s [id=lkc-odgpo/CLUSTER#kafka-cluster#LITERAL#User:309715#*#DESCRIBE#ALLOW]
+    confluentcloud_kafka_acl.describe-test-basic-cluster: Creation complete after 1s [id=lkc-odgpo/CLUSTER#kafka-cluster#LITERAL#User:sa-l7v772#*#DESCRIBE#ALLOW]
     confluentcloud_kafka_topic.orders: Creation complete after 2s [id=lkc-odgpo/orders]
     confluentcloud_kafka_acl.describe-orders: Creating...
-    confluentcloud_kafka_acl.describe-orders: Creation complete after 0s [id=lkc-odgpo/TOPIC#orders#LITERAL#User:309715#*#DESCRIBE#ALLOW]
+    confluentcloud_kafka_acl.describe-orders: Creation complete after 0s [id=lkc-odgpo/TOPIC#orders#LITERAL#User:sa-l7v772#*#DESCRIBE#ALLOW]
 
     Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
     ```
@@ -332,8 +310,8 @@ Your output should resemble:
 
 ```
 confluentcloud_service_account.test-sa: Destroying... [id=sa-l7v772]
-confluentcloud_kafka_acl.describe-orders: Destroying... [id=lkc-odgpo/TOPIC#orders#LITERAL#User:309715#*#DESCRIBE#ALLOW]
-confluentcloud_kafka_acl.describe-test-basic-cluster: Destroying... [id=lkc-odgpo/CLUSTER#kafka-cluster#LITERAL#User:309715#*#DESCRIBE#ALLOW]
+confluentcloud_kafka_acl.describe-orders: Destroying... [id=lkc-odgpo/TOPIC#orders#LITERAL#User:sa-l7v772#*#DESCRIBE#ALLOW]
+confluentcloud_kafka_acl.describe-test-basic-cluster: Destroying... [id=lkc-odgpo/CLUSTER#kafka-cluster#LITERAL#User:sa-l7v772#*#DESCRIBE#ALLOW]
 confluentcloud_kafka_acl.describe-orders: Destruction complete after 2s
 confluentcloud_kafka_acl.describe-test-basic-cluster: Destruction complete after 2s
 confluentcloud_kafka_topic.orders: Destroying... [id=lkc-odgpo/orders]
