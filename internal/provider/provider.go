@@ -111,6 +111,7 @@ func New(version string) func() *schema.Provider {
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
+				"confluentcloud_kafka_cluster":   kafkaDataSource(),
 				"confluentcloud_environment":     environmentDataSource(),
 				"confluentcloud_service_account": serviceAccountDataSource(),
 			},
@@ -152,6 +153,24 @@ func environmentSchema() *schema.Schema {
 		MaxItems:    1,
 		ForceNew:    true,
 		Description: "Environment objects represent an isolated namespace for your Confluent resources for organizational purposes.",
+	}
+}
+
+// https://github.com/hashicorp/terraform-plugin-sdk/issues/155#issuecomment-489699737
+////  alternative - https://github.com/hashicorp/terraform-plugin-sdk/issues/248#issuecomment-725013327
+func environmentDataSourceSchema() *schema.Schema {
+	return &schema.Schema{
+		Type: schema.TypeList,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				paramId: {
+					Type:     schema.TypeString,
+					Required: true,
+				},
+			},
+		},
+		Required: true,
+		MaxItems: 1,
 	}
 }
 
