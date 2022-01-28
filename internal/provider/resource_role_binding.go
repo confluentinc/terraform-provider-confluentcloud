@@ -30,8 +30,6 @@ const (
 	paramCrnPattern = "crn_pattern"
 )
 
-var acceptedRbacRoleNames = []string{"MetricsViewer", "CloudClusterAdmin", "OrganizationAdmin", "EnvironmentAdmin"}
-
 func roleBindingResource() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: roleBindingCreate,
@@ -49,11 +47,10 @@ func roleBindingResource() *schema.Resource {
 				ValidateFunc: validation.StringMatch(regexp.MustCompile("^User:"), "the Principal must be of the form 'User:'"),
 			},
 			paramRoleName: {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				Description:  "The name of the role to bind to the principal.",
-				ValidateFunc: validation.StringInSlice(acceptedRbacRoleNames, false),
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+				Description: "The name of the role to bind to the principal.",
 			},
 			paramCrnPattern: {
 				Type:         schema.TypeString,
