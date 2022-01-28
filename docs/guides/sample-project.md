@@ -297,6 +297,15 @@ Save your Kafka API key and secret in a secure location.
 
     Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
     ```
+6.  Inspect created ACLs:
+    
+    ```bash
+    confluent kafka acl list --cluster lkc-odgpo --environment env-31dgj
+    Principal    | Permission | Operation | ResourceType | ResourceName  | PatternType
+    -----------------+------------+-----------+--------------+---------------+--------------
+    User:sa-l7v772 | ALLOW      | DESCRIBE  | TOPIC        | orders        | LITERAL
+    User:sa-l7v772 | ALLOW      | DESCRIBE  | CLUSTER      | kafka-cluster | LITERAL
+    ```    
 
 ### Clean up and delete resources
 
