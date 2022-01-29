@@ -301,6 +301,11 @@ Save your Kafka API key and secret in a secure location.
     
     ```bash
     confluent kafka acl list --cluster lkc-odgpo --environment env-31dgj
+    ```
+    
+    Your output should resemble:
+    
+    ```
     Principal    | Permission | Operation | ResourceType | ResourceName  | PatternType
     -----------------+------------+-----------+--------------+---------------+--------------
     User:sa-l7v772 | ALLOW      | DESCRIBE  | TOPIC        | orders        | LITERAL
