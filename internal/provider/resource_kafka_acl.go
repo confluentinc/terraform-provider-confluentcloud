@@ -109,7 +109,7 @@ func kafkaAclResource() *schema.Resource {
 				Required:     true,
 				ForceNew:     true,
 				Description:  "The principal for the ACL.",
-				ValidateFunc: validation.StringMatch(regexp.MustCompile("^User:sa-"), "the principal must start with 'User:sa-'"),
+				ValidateFunc: validation.StringMatch(regexp.MustCompile("^User:sa-"), "the principal must start with 'User:sa-'. Follow the upgrade guide at https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs/guides/upgrade-guide-0.4.0 to upgrade to the latest version of Terraform Provider for Confluent Cloud"),
 			},
 			paramHost: {
 				Type:        schema.TypeString,
