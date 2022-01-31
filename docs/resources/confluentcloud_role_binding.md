@@ -20,7 +20,9 @@ resource "confluentcloud_service_account" "test_sa" {
 resource "confluentcloud_role_binding" "example-rb" {
   principal = "User:${confluentcloud_service_account.test_sa.id}"
   role_name  = "CloudClusterAdmin"
-  crn_pattern = confluentcloud_kafka_cluster.standard-cluster-on-aws.rbac_crn  
+  crn_pattern = confluentcloud_kafka_cluster.standard-cluster-on-aws.rbac_crn
+  # The expected crn_pattern for a topic named "example_topic"
+  # crn_pattern = "${confluentcloud_kafka_cluster.standard-cluster-on-aws.rbac_crn}/kafka=${confluentcloud_kafka_cluster.standard-cluster-on-aws.id}/topic=example_topic"
 }
 ```
 
