@@ -198,6 +198,7 @@ func credentialsSchema() *schema.Schema {
 		Description: "The Cluster API Credentials.",
 		MinItems:    1,
 		MaxItems:    1,
+		Sensitive:   true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				paramKey: {
