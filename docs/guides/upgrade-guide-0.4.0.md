@@ -65,15 +65,16 @@ terraform {
 
 ## Updating Terraform Configuration
 
-### `confluentcloud_kafka_acl` resource
+### Update `confluentcloud_kafka_acl` resource
 
-`principal` attribute started accepting service account IDs instead of integer IDs:
+`principal` attribute now requires service account IDs instead of integer IDs:
 
 #### Before
 ```hcl
 resource "confluentcloud_kafka_acl" "describe-orders" {
   # ...
   principal = "User:12345"
+  # principal = "User:${var.service_account_int_id}"
   # ...
 }
 ```
@@ -93,8 +94,8 @@ Update your Terraform configuration to reflect the changes to `confluentcloud_ka
 
 -> **Note:** If you are upgrading from either `0.1.0` or `0.2.0` you should also [remove](https://www.terraform.io/docs/cli/commands/state/rm.html) existing `confluentcloud_kafka_acl` resource instances from your `terraform.tfstate` state file.
 
-### `confluentcloud_kafka_cluster` resource
-New `rbac_crn` attribute was introduced to `confluentcloud_kafka_cluster` resource.
+### Changes to `confluentcloud_kafka_cluster` resource
+New `rbac_crn` attribute was introduced to `confluentcloud_kafka_cluster` resource. No actions required.
 
 ## Upgrade State File
 -> **Note:** We recommend you to use Terraform version manager [tfutils/tfenv](https://github.com/tfutils/tfenv): `tfenv install 0.14.0`, `tfenv use 0.14.0`.
