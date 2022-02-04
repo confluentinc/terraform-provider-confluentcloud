@@ -25,9 +25,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
-	"regexp"
 	"strings"
 )
 
@@ -142,11 +140,10 @@ func environmentSchema() *schema.Schema {
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				paramId: {
-					Type:         schema.TypeString,
-					Required:     true,
-					ForceNew:     true,
-					Description:  "The unique identifier for the environment.",
-					ValidateFunc: validation.StringMatch(regexp.MustCompile("^env-"), "the environment ID must be of the form 'env-'"),
+					Type:        schema.TypeString,
+					Required:    true,
+					ForceNew:    true,
+					Description: "The unique identifier for the environment.",
 				},
 			},
 		},
