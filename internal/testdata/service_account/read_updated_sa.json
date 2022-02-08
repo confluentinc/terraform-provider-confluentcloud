@@ -1,5 +1,5 @@
 {
-  "api_version": "v2",
+  "api_version": "iam/v2",
   "kind": "ServiceAccount",
   "id": "sa-1jjv26",
   "metadata": {
