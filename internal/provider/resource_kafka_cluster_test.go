@@ -38,6 +38,8 @@ const (
 	kafkaClusterId                   = "lkc-19ynpv"
 	kafkaEnvId                       = "env-1jrymj"
 	kafkaDisplayName                 = "TestCluster"
+	kafkaApiVersion                  = "cmk/v2"
+	kafkaKind                        = "Cluster"
 	kafkaAvailability                = "SINGLE_ZONE"
 	kafkaCloud                       = "GCP"
 	kafkaRegion                      = "us-central1"
@@ -165,6 +167,9 @@ func TestAccCluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckClusterExists(fullKafkaResourceLabel),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "id", kafkaClusterId),
+					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "api_version", kafkaApiVersion),
+					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "kind", kafkaKind),
+					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "display_name", kafkaDisplayName),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "availability", kafkaAvailability),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "bootstrap_endpoint", kafkaBootstrapEndpoint),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "cloud", kafkaCloud),
@@ -182,6 +187,8 @@ func TestAccCluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckClusterExists(fullKafkaResourceLabel),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "id", kafkaClusterId),
+					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "api_version", kafkaApiVersion),
+					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "kind", kafkaKind),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "availability", kafkaAvailability),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "bootstrap_endpoint", kafkaBootstrapEndpoint),
 					resource.TestCheckResourceAttr(fullKafkaResourceLabel, "cloud", kafkaCloud),

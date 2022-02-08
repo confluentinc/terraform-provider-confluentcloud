@@ -153,6 +153,8 @@ func TestAccServiceAccount(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountExists(fullSaResourceLabel),
 					resource.TestCheckResourceAttr(fullSaResourceLabel, "id", "sa-1jjv26"),
+					resource.TestCheckResourceAttr(fullSaResourceLabel, "api_version", saApiVersion),
+					resource.TestCheckResourceAttr(fullSaResourceLabel, "kind", saKind),
 					resource.TestCheckResourceAttr(fullSaResourceLabel, "display_name", saDisplayName),
 					resource.TestCheckResourceAttr(fullSaResourceLabel, "description", saDescription),
 				),
@@ -168,6 +170,8 @@ func TestAccServiceAccount(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountExists(fullSaResourceLabel),
 					resource.TestCheckResourceAttr(fullSaResourceLabel, "id", "sa-1jjv26"),
+					resource.TestCheckResourceAttr(fullSaResourceLabel, "api_version", saApiVersion),
+					resource.TestCheckResourceAttr(fullSaResourceLabel, "kind", saKind),
 					resource.TestCheckResourceAttr(fullSaResourceLabel, "display_name", saDisplayName),
 					resource.TestCheckResourceAttr(fullSaResourceLabel, "description", saUpdatedDescription),
 				),

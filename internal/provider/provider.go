@@ -34,6 +34,7 @@ const (
 )
 
 const (
+	paramApiVersion  = "api_version"
 	paramCloud       = "cloud"
 	paramRegion      = "region"
 	paramEnvironment = "environment"
@@ -41,6 +42,7 @@ const (
 	paramId          = "id"
 	paramDisplayName = "display_name"
 	paramDescription = "description"
+	paramKind        = "kind"
 )
 
 type Client struct {

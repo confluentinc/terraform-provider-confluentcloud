@@ -35,6 +35,16 @@ func serviceAccountResource() *schema.Resource {
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 		Schema: map[string]*schema.Schema{
+			paramApiVersion: {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "API Version defines the schema version of this representation of a Service Account.",
+			},
+			paramKind: {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Kind defines the object Service Account represents.",
+			},
 			paramDisplayName: {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -129,6 +139,12 @@ func serviceAccountRead(ctx context.Context, d *schema.ResourceData, meta interf
 			return nil
 		}
 
+		return createDiagnosticsWithDetails(err)
+	}
+	if err := d.Set(paramApiVersion, serviceAccount.GetApiVersion()); err != nil {
+		return createDiagnosticsWithDetails(err)
+	}
+	if err := d.Set(paramKind, serviceAccount.GetKind()); err != nil {
 		return createDiagnosticsWithDetails(err)
 	}
 	if err := d.Set(paramDisplayName, serviceAccount.GetDisplayName()); err != nil {

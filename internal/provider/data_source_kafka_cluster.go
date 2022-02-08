@@ -33,6 +33,14 @@ func kafkaDataSource() *schema.Resource {
 			},
 			// Similarly, paramEnvironment is required as well
 			paramEnvironment: environmentDataSourceSchema(),
+			paramApiVersion: {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			paramKind: {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			paramDisplayName: {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -87,6 +95,12 @@ func kafkaDataSourceRead(ctx context.Context, d *schema.ResourceData, meta inter
 		return createDiagnosticsWithDetails(err)
 	}
 
+	if err := d.Set(paramApiVersion, cluster.GetApiVersion()); err != nil {
+		return createDiagnosticsWithDetails(err)
+	}
+	if err := d.Set(paramKind, cluster.GetKind()); err != nil {
+		return createDiagnosticsWithDetails(err)
+	}
 	if err := d.Set(paramDisplayName, cluster.Spec.GetDisplayName()); err != nil {
 		return createDiagnosticsWithDetails(err)
 	}

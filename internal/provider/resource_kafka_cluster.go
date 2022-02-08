@@ -78,6 +78,16 @@ func kafkaResource() *schema.Resource {
 				Description:  "The name of the Kafka cluster.",
 				ValidateFunc: validation.StringIsNotEmpty,
 			},
+			paramApiVersion: {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "API Version defines the schema version of this representation of a Kafka cluster.",
+			},
+			paramKind: {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Kind defines the object Kafka cluster represents.",
+			},
 			paramAvailability: {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -448,6 +458,12 @@ func readAndSetResourceConfigurationArguments(ctx context.Context, d *schema.Res
 		return nil, err
 	}
 
+	if err := d.Set(paramApiVersion, cluster.GetApiVersion()); err != nil {
+		return nil, err
+	}
+	if err := d.Set(paramKind, cluster.GetKind()); err != nil {
+		return nil, err
+	}
 	if err := d.Set(paramDisplayName, cluster.Spec.GetDisplayName()); err != nil {
 		return nil, err
 	}

@@ -30,10 +30,12 @@ import (
 )
 
 const (
+	saApiVersion             = "iam/v2"
 	saDataSourceScenarioName = "confluentcloud_service_account Data Source Lifecycle"
 	saId                     = "sa-1jjv26"
 	saDisplayName            = "test_service_account_display_name"
 	saDescription            = "The initial description of service account"
+	saKind                   = "ServiceAccount"
 	saResourceLabel          = "test_sa_resource_label"
 )
 
@@ -94,6 +96,8 @@ func TestAccDataSourceServiceAccount(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountExists(fullServiceAccountDataSourceLabel),
 					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramId, saId),
+					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramApiVersion, saApiVersion),
+					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramKind, saKind),
 					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramDisplayName, saDisplayName),
 					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramDescription, saDescription),
 				),

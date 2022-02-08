@@ -91,6 +91,9 @@ func TestAccDataSourceCluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckClusterExists(fullKafkaDataSourceLabel),
 					resource.TestCheckResourceAttr(fullKafkaDataSourceLabel, "id", kafkaClusterId),
+					resource.TestCheckResourceAttr(fullKafkaDataSourceLabel, "api_version", kafkaApiVersion),
+					resource.TestCheckResourceAttr(fullKafkaDataSourceLabel, "kind", kafkaKind),
+					resource.TestCheckResourceAttr(fullKafkaDataSourceLabel, "display_name", kafkaDisplayName),
 					resource.TestCheckResourceAttr(fullKafkaDataSourceLabel, "availability", kafkaAvailability),
 					resource.TestCheckResourceAttr(fullKafkaDataSourceLabel, "bootstrap_endpoint", kafkaBootstrapEndpoint),
 					resource.TestCheckResourceAttr(fullKafkaDataSourceLabel, "cloud", kafkaCloud),

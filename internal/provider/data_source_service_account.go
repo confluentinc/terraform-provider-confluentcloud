@@ -31,6 +31,16 @@ func serviceAccountDataSource() *schema.Resource {
 				// so the data source knows which Service Account to retrieve.
 				Required: true,
 			},
+			paramApiVersion: {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "API Version defines the schema version of this representation of a Service Account.",
+			},
+			paramKind: {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Kind defines the object Service Account represents.",
+			},
 			paramDisplayName: {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -52,6 +62,12 @@ func serviceAccountDataSourceRead(ctx context.Context, d *schema.ResourceData, m
 	serviceAccount, resp, err := executeServiceAccountRead(c.iamApiContext(ctx), c, serviceAccountId)
 	if err != nil {
 		log.Printf("[ERROR] Service account get failed for id %s, %v, %s", serviceAccountId, resp, err)
+		return createDiagnosticsWithDetails(err)
+	}
+	if err := d.Set(paramApiVersion, serviceAccount.GetApiVersion()); err != nil {
+		return createDiagnosticsWithDetails(err)
+	}
+	if err := d.Set(paramKind, serviceAccount.GetKind()); err != nil {
 		return createDiagnosticsWithDetails(err)
 	}
 	if err := d.Set(paramDisplayName, serviceAccount.GetDisplayName()); err != nil {
