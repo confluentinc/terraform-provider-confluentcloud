@@ -82,7 +82,7 @@ The following arguments are supported:
 - `display_name` - (Required String) The name of the Kafka cluster.
 - `availability` - (Required String) The availability zone configuration of the Kafka cluster. Accepted values are: `SINGLE_ZONE` and `MULTI_ZONE`.
 - `cloud` - (Required String) The cloud service provider that runs the Kafka cluster. Accepted values are: `AWS`, `AZURE`, and `GCP`.
-- `region` - (Required String) The cloud service provider region where the Kafka cluster is running, for example, `us-west-2`). See [Cloud Providers and Regions](https://docs.confluent.io/cloud/current/clusters/regions.html#cloud-providers-and-regions) for a full list of options for AWS, Azure, and GCP.
+- `region` - (Required String) The cloud service provider region where the Kafka cluster is running, for example, `us-west-2`. See [Cloud Providers and Regions](https://docs.confluent.io/cloud/current/clusters/regions.html#cloud-providers-and-regions) for a full list of options for AWS, Azure, and GCP.
 - `basic` - (Optional Configuration Block) The configuration of the Basic Kafka cluster.
 - `standard` - (Optional Configuration Block) The configuration of the Standard Kafka cluster.
 - `dedicated` - (Optional Configuration Block) The configuration of the Dedicated Kafka cluster. It supports the following:
@@ -102,6 +102,8 @@ The following arguments are supported:
 In addition to the preceding arguments, the following attributes are exported:
 
 - `id` - (String) The ID of the Kafka cluster (e.g., `lkc-abc123`).
+- `api_version` - (String) An API Version of the schema version of the Kafka cluster, for example, `cmk/v2`.
+- `kind` - (String) A kind of the Kafka cluster, for example, `Cluster`.
 - `bootstrap_endpoint` - (String) The bootstrap endpoint used by Kafka clients to connect to the Kafka cluster. (e.g., `pkc-00000.us-central1.gcp.confluent.cloud:9092`).
 - `http_endpoint` - (String) The REST endpoint of the Kafka cluster (e.g., `https://pkc-00000.us-central1.gcp.confluent.cloud:443`).
 

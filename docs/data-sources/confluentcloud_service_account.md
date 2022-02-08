@@ -33,5 +33,7 @@ The following arguments are supported:
 
 In addition to the preceding arguments, the following attributes are exported:
 
+- `api_version` - (String) An API Version of the schema version of the Service Account.
+- `kind` - (String) A kind of the Service Account.
 - `display_name` - (String) A human-readable name for the Service Account.
 - `description` - (String) A free-form description of the Service Account.

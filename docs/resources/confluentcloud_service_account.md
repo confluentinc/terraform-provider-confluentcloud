@@ -32,6 +32,8 @@ The following arguments are supported:
 In addition to the preceding arguments, the following attributes are exported:
 
 - `id` - (String) The ID of the Service Account (e.g., `sa-abc123`).
+- `api_version` - (String) An API Version of the schema version of the Service Account, for example, `iam/v2`.
+- `kind` - (String) A kind of the Service Account, for example, `ServiceAccount`.
 
 ## Import
 
