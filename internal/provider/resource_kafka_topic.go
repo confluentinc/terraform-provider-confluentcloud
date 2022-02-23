@@ -26,16 +26,18 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const (
-	paramClusterId       = "kafka_cluster"
-	paramTopicName       = "topic_name"
-	paramCredentials     = "credentials"
-	paramPartitionsCount = "partitions_count"
-	paramKey             = "key"
-	paramSecret          = "secret"
-	paramConfigs         = "config"
+	paramClusterId              = "kafka_cluster"
+	paramTopicName              = "topic_name"
+	paramCredentials            = "credentials"
+	paramPartitionsCount        = "partitions_count"
+	paramKey                    = "key"
+	paramSecret                 = "secret"
+	paramConfigs                = "config"
+	kafkaRestAPIWaitAfterCreate = 10 * time.Second
 )
 
 func extractConfigs(d *schema.ResourceData) []kafkarestv3.CreateTopicRequestDataConfigs {
@@ -139,6 +141,10 @@ func kafkaTopicCreate(ctx context.Context, d *schema.ResourceData, meta interfac
 	kafkaTopicId := createKafkaTopicId(kafkaRestClient.clusterId, topicName)
 	d.SetId(kafkaTopicId)
 	log.Printf("[DEBUG] Created Kafka topic %s", kafkaTopicId)
+
+	// https://github.com/confluentinc/terraform-provider-confluentcloud/issues/40#issuecomment-1048782379
+	time.Sleep(kafkaRestAPIWaitAfterCreate)
+
 	return kafkaTopicRead(ctx, d, meta)
 }
 

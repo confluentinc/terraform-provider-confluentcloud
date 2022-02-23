@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const (
@@ -180,6 +181,10 @@ func kafkaAclCreate(ctx context.Context, d *schema.ResourceData, meta interface{
 	kafkaAclId := createKafkaAclId(kafkaRestClient.clusterId, acl)
 	d.SetId(kafkaAclId)
 	log.Printf("[DEBUG] Created kafka ACL %s", kafkaAclId)
+
+	// https://github.com/confluentinc/terraform-provider-confluentcloud/issues/40#issuecomment-1048782379
+	time.Sleep(kafkaRestAPIWaitAfterCreate)
+
 	return kafkaAclRead(ctx, d, meta)
 }
 
