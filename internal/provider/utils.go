@@ -393,9 +393,9 @@ func saResourceIdToSaIntegerId(c *Client, saResourceId string) (int, error) {
 		return 0, err
 	}
 	for _, sa := range list.GetUsers() {
-		if sa.ResourceId != nil && *sa.ResourceId == saResourceId {
-			if sa.Id != nil {
-				return int(*sa.Id), nil
+		if sa.GetResourceId() == saResourceId {
+			if sa.HasId() {
+				return int(sa.GetId()), nil
 			} else {
 				return 0, fmt.Errorf("the matching integer ID for a service account with resource ID=%s is nil", saResourceId)
 			}
