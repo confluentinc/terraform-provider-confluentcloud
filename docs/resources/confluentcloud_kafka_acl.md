@@ -34,7 +34,7 @@ resource "confluentcloud_kafka_acl" "describe-basic-cluster" {
   resource_type = "CLUSTER"
   resource_name = "kafka-cluster"
   pattern_type  = "LITERAL"
-  principal     = "User:12345"
+  principal     = "User:sa-xyz123"
   host          = "*"
   operation     = "DESCRIBE"
   permission    = "ALLOW"
@@ -86,5 +86,5 @@ Import Kafka ACLs by using the Kafka cluster ID and attributes of `confluentclou
 $ export KAFKA_API_KEY="<kafka_api_key>"
 $ export KAFKA_API_SECRET="<kafka_api_secret>"
 $ export KAFKA_HTTP_ENDPOINT="<kafka_http_endpoint>"
-$ terraform import confluentcloud_kafka_acl.describe-cluster "lkc-12345/CLUSTER#kafka-cluster#LITERAL#User:67890#*#DESCRIBE#ALLOW"
+$ terraform import confluentcloud_kafka_acl.describe-cluster "lkc-12345/CLUSTER#kafka-cluster#LITERAL#User:sa-xyz123#*#DESCRIBE#ALLOW"
 ```
