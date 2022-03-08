@@ -38,11 +38,15 @@ const (
 	paramSecret                 = "secret"
 	paramConfigs                = "config"
 	kafkaRestAPIWaitAfterCreate = 10 * time.Second
+	docsUrl                     = "https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs/resources/confluentcloud_kafka_topic"
 )
 
-func extractConfigs(d *schema.ResourceData) []kafkarestv3.CreateTopicRequestDataConfigs {
-	configs := d.Get(paramConfigs).(map[string]interface{})
+// https://docs.confluent.io/cloud/current/clusters/broker-config.html#custom-topic-settings-for-all-cluster-types
+var editableTopicSettings = []string{"delete.retention.ms", "max.message.bytes", "max.compaction.lag.ms",
+	"message.timestamp.difference.max.ms", "message.timestamp.type", "min.compaction.lag.ms", "min.insync.replicas",
+	"retention.bytes", "retention.ms", "segment.bytes", "segment.ms"}
 
+func extractConfigs(configs map[string]interface{}) []kafkarestv3.CreateTopicRequestDataConfigs {
 	configResult := make([]kafkarestv3.CreateTopicRequestDataConfigs, len(configs))
 
 	i := 0
@@ -107,8 +111,7 @@ func kafkaTopicResource() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Optional:    true,
-				ForceNew:    true,
-				Description: "The custom topic configurations to set (e.g., `\"cleanup.policy\" = \"compact\"`).",
+				Description: "The custom topic settings to set (e.g., `\"cleanup.policy\" = \"compact\"`).",
 			},
 			paramCredentials: credentialsSchema(),
 		},
@@ -128,7 +131,7 @@ func kafkaTopicCreate(ctx context.Context, d *schema.ResourceData, meta interfac
 	kafkaTopicRequestData := kafkarestv3.CreateTopicRequestData{
 		TopicName:       topicName,
 		PartitionsCount: int32(d.Get(paramPartitionsCount).(int)),
-		Configs:         extractConfigs(d),
+		Configs:         extractConfigs(d.Get(paramConfigs).(map[string]interface{})),
 	}
 
 	_, resp, err := executeKafkaTopicCreate(ctx, kafkaRestClient, kafkaTopicRequestData)
@@ -302,10 +305,114 @@ func readAndSetTopicResourceConfigurationArguments(ctx context.Context, d *schem
 }
 
 func kafkaTopicUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	if d.HasChangesExcept(paramCredentials) {
-		return diag.Errorf("only %s block can be updated for a Kafka topic", paramCredentials)
+	if d.HasChangesExcept(paramCredentials, paramConfigs) {
+		return diag.Errorf("only %s and %s blocks can be updated for a Kafka topic", paramCredentials, paramConfigs)
+	}
+	if d.HasChange(paramConfigs) {
+		log.Printf("[INFO] Kafka Topic config update for '%s'", d.Get(paramTopicName).(string))
+
+		// TF Provider allows the following operations for editable topic settings under 'config' block:
+		// 1. Adding new key value pair, for example, "retention.ms" = "600000"
+		// 2. Update a value for existing key value pair, for example, "retention.ms" = "600000" -> "retention.ms" = "600001"
+		// You might find the list of editable topic settings and their limits at
+		// https://docs.confluent.io/cloud/current/clusters/broker-config.html#custom-topic-settings-for-all-cluster-types
+
+		// Extract 'old' and 'new' (include changes in TF configuration) topic settings
+		// * 'old' topic settings -- all topic settings from TF configuration _before_ changes / updates (currently set on Confluent Cloud)
+		// * 'new' topic settings -- all topic settings from TF configuration _after_ changes
+		oldTopicSettingsMap, newTopicSettingsMap := extractOldAndNewTopicSettings(d)
+
+		// Verify that no topic settings were removed (reset to its default value) in TF configuration which is an unsupported operation at the moment
+		for oldTopicSettingName := range oldTopicSettingsMap {
+			if _, ok := newTopicSettingsMap[oldTopicSettingName]; !ok {
+				return diag.Errorf("Reset to topic setting's default value operation (in other words, removing topic settings from 'configs' block) "+
+					"is not supported at the moment. "+
+					"Instead, find its default value at %s and set its current value to the default value.", docsUrl)
+			}
+		}
+
+		// Store only topic settings that were updated in TF configuration.
+		// Will be used for creating a request to Kafka REST API.
+		var topicSettingsUpdateBatch []kafkarestv3.AlterConfigBatchRequestDataData
+
+		// Verify that topics that were changed in TF configuration settings are indeed editable
+		for topicSettingName, newTopicSettingValue := range newTopicSettingsMap {
+			oldTopicSettingValue, ok := oldTopicSettingsMap[topicSettingName]
+			isTopicSettingValueUpdated := !(ok && oldTopicSettingValue == newTopicSettingValue)
+			if isTopicSettingValueUpdated {
+				// operation #1 (ok = False) or operation #2 (ok = True, oldTopicSettingValue != newTopicSettingValue)
+				isTopicSettingEditable := stringInSlice(topicSettingName, editableTopicSettings)
+				if isTopicSettingEditable {
+					topicSettingsUpdateBatch = append(topicSettingsUpdateBatch, kafkarestv3.AlterConfigBatchRequestDataData{
+						Name:  topicSettingName,
+						Value: ptr(newTopicSettingValue),
+					})
+				} else {
+					return diag.Errorf("'%s' topic setting cannot be updated since it is read-only. "+
+						"Read %s for more details.", topicSettingName, docsUrl)
+				}
+			}
+		}
+
+		// Construct a request for Kafka REST API
+		requestData := kafkarestv3.AlterConfigBatchRequestData{
+			Data: topicSettingsUpdateBatch,
+		}
+		httpEndpoint := d.Get(paramHttpEndpoint).(string)
+		clusterId := d.Get(paramClusterId).(string)
+		clusterApiKey, clusterApiSecret, err := extractClusterApiKeyAndApiSecret(d)
+		if err != nil {
+			return createDiagnosticsWithDetails(err)
+		}
+		kafkaRestClient := meta.(*Client).kafkaRestClientFactory.CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret)
+		topicName := d.Get(paramTopicName).(string)
+
+		// Send a request to Kafka REST API
+		_, err = executeKafkaTopicUpdate(ctx, kafkaRestClient, topicName, requestData)
+		if err != nil {
+			// For example, Kafka REST API will return Bad Request if new topic setting value exceeds the max limit:
+			// 400 Bad Request: Config property 'delete.retention.ms' with value '63113904003' exceeded max limit of 60566400000.
+			return createDiagnosticsWithDetails(err)
+		}
+		// Give some time to Kafka REST API to apply an update of topic settings
+		time.Sleep(kafkaRestAPIWaitAfterCreate)
+
+		// Check that topic configs update was successfully executed
+		// In other words, remote topic setting values returned by Kafka REST API match topic setting values from updated TF configuration
+		actualTopicSettings, err := loadTopicConfigs(ctx, d, kafkaRestClient, topicName)
+		if err != nil {
+			return createDiagnosticsWithDetails(err)
+		}
+
+		var updatedTopicSettings, outdatedTopicSettings []string
+		for _, v := range topicSettingsUpdateBatch {
+			if v.Value == nil {
+				// It will never happen because of the way we construct topicSettingsUpdateBatch
+				continue
+			}
+			topicSettingName := v.Name
+			expectedValue := *v.Value
+			actualValue, ok := actualTopicSettings[topicSettingName]
+			if ok && actualValue != expectedValue {
+				outdatedTopicSettings = append(outdatedTopicSettings, topicSettingName)
+			} else {
+				updatedTopicSettings = append(updatedTopicSettings, topicSettingName)
+			}
+		}
+		if len(outdatedTopicSettings) > 0 {
+			return diag.Errorf("Update failed for the following topic settings: %v. "+
+				"Double check that these topic settings are indeed editable and provided target values do not exceed min/max allowed values by reading %s", outdatedTopicSettings, docsUrl)
+		}
+		log.Printf("[INFO] Kafka Topic config update for '%s' topic was completed successfully for the following topic settings: %v", topicName, updatedTopicSettings)
 	}
 	return nil
+}
+
+func executeKafkaTopicUpdate(ctx context.Context, c *KafkaRestClient, topicName string, requestData kafkarestv3.AlterConfigBatchRequestData) (*http.Response, error) {
+	opts := &kafkarestv3.UpdateKafkaV3TopicConfigBatchOpts{
+		AlterConfigBatchRequestData: optional.NewInterface(requestData),
+	}
+	return c.apiClient.ConfigsV3Api.UpdateKafkaV3TopicConfigBatch(c.apiContext(ctx), c.clusterId, topicName, opts)
 }
 
 func setKafkaCredentials(kafkaApiKey, kafkaApiSecret string, d *schema.ResourceData) error {
@@ -330,4 +437,9 @@ func loadTopicConfigs(ctx context.Context, d *schema.ResourceData, c *KafkaRestC
 		}
 	}
 	return config, nil
+}
+
+func extractOldAndNewTopicSettings(d *schema.ResourceData) (map[string]string, map[string]string) {
+	oldConfigs, newConfigs := d.GetChange(paramConfigs)
+	return convertToStringStringMap(oldConfigs.(map[string]interface{})), convertToStringStringMap(newConfigs.(map[string]interface{}))
 }

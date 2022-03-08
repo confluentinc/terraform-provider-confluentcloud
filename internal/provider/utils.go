@@ -415,3 +415,26 @@ func clusterCrnToRbacClusterCrn(clusterCrn string) (string, error) {
 	}
 	return clusterCrn[:lastIndex], nil
 }
+
+func stringInSlice(target string, slice []string) bool {
+	for _, value := range slice {
+		if value == target {
+			return true
+		}
+	}
+	return false
+}
+
+func convertToStringStringMap(data map[string]interface{}) map[string]string {
+	stringMap := make(map[string]string)
+
+	for key, value := range data {
+		stringMap[key] = value.(string)
+	}
+
+	return stringMap
+}
+
+func ptr(s string) *string {
+	return &s
+}

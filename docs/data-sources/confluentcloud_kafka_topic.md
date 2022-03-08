@@ -53,6 +53,8 @@ In addition to the preceding arguments, the following attributes are exported:
 
 - `id` - (String) The ID of the Kafka topic, in the format `<Kafka cluster ID>/<Kafka Topic name>`, for example, `lkc-abc123/orders-1`.
 - `partitions_count` - (Number) The number of partitions to create in the topic. Defaults to `6`.
-- `config` - (String Map) The custom topic configurations:
-    - `name` - (String) The configuration name, for example, `cleanup.policy`.
-    - `value` - (String) The configuration value, for example, `compact`.
+- `config` - (String Map) The custom topic settings:
+    - `name` - (String) The setting name, for example, `cleanup.policy`.
+    - `value` - (String) The setting value, for example, `compact`.
+
+-> **Note:** For more information on the topic settings, see [Custom topic settings for all cluster types](https://docs.confluent.io/cloud/current/clusters/broker-config.html#custom-topic-settings-for-all-cluster-types).

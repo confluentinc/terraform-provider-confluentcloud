@@ -193,11 +193,16 @@
       },
       "cluster_id": "lkc-190073",
       "name": "max.compaction.lag.ms",
-      "value": "9223372036854775807",
+      "value": "604800000",
       "is_read_only": false,
       "is_sensitive": false,
-      "source": "DEFAULT_CONFIG",
+      "source": "DYNAMIC_TOPIC_CONFIG",
       "synonyms": [
+        {
+          "name": "max.compaction.lag.ms",
+          "value": "604800000",
+          "source": "DYNAMIC_TOPIC_CONFIG"
+        },
         {
           "name": "log.cleaner.max.compaction.lag.ms",
           "value": "9223372036854775807",
@@ -205,7 +210,7 @@
         }
       ],
       "topic_name": "read_created_kafka_topic",
-      "is_default": true
+      "is_default": false
     },
     {
       "kind": "KafkaTopicConfig",
@@ -455,14 +460,14 @@
       },
       "cluster_id": "lkc-190073",
       "name": "retention.ms",
-      "value": "6789",
+      "value": "67890",
       "is_read_only": false,
       "is_sensitive": false,
       "source": "DYNAMIC_TOPIC_CONFIG",
       "synonyms": [
         {
           "name": "retention.ms",
-          "value": "6789",
+          "value": "67890",
           "source": "DYNAMIC_TOPIC_CONFIG"
         }
       ],
@@ -480,8 +485,13 @@
       "value": "104857600",
       "is_read_only": false,
       "is_sensitive": false,
-      "source": "STATIC_BROKER_CONFIG",
+      "source": "DYNAMIC_TOPIC_CONFIG",
       "synonyms": [
+        {
+          "name": "segment.bytes",
+          "value": "104857600",
+          "source": "DYNAMIC_TOPIC_CONFIG"
+        },
         {
           "name": "log.segment.bytes",
           "value": "104857600",

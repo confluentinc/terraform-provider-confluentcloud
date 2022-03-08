@@ -34,6 +34,7 @@ import (
 
 const (
 	scenarioStateTopicHasBeenCreated = "A new topic has been just created"
+	scenarioStateTopicHasBeenUpdated = "A new topic has been just updated"
 	scenarioStateTopicHasBeenDeleted = "The topic has been deleted"
 	topicScenarioName                = "confluentcloud_kafka_topic Resource Lifecycle"
 	clusterId                        = "lkc-190073"
@@ -42,6 +43,11 @@ const (
 	firstConfigValue                 = "12345"
 	secondConfigName                 = "retention.ms"
 	secondConfigValue                = "6789"
+	secondConfigUpdatedValue         = "67890"
+	thirdConfigName                  = "segment.bytes"
+	thirdConfigAddedValue            = "104857600"
+	fourthConfigName                 = "max.compaction.lag.ms"
+	fourthConfigAddedValue           = "604800000"
 	topicName                        = "test_topic_name"
 	topicResourceLabel               = "test_topic_resource_label"
 	kafkaApiKey                      = "test_key"
@@ -53,6 +59,7 @@ var fullTopicResourceLabel = fmt.Sprintf("confluentcloud_kafka_topic.%s", topicR
 var createKafkaTopicPath = fmt.Sprintf("/kafka/v3/clusters/%s/topics", clusterId)
 var readKafkaTopicPath = fmt.Sprintf("/kafka/v3/clusters/%s/topics/%s", clusterId, topicName)
 var readKafkaTopicConfigPath = fmt.Sprintf("/kafka/v3/clusters/%s/topics/%s/configs", clusterId, topicName)
+var updateKafkaTopicConfigPath = fmt.Sprintf("/kafka/v3/clusters/%s/topics/%s/configs:alter", clusterId, topicName)
 
 // TODO: APIF-1990
 var mockTopicTestServerUrl = ""
@@ -112,6 +119,14 @@ func TestAccTopic(t *testing.T) {
 			contentTypeJSONHeader,
 			http.StatusOK,
 		))
+	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo(readKafkaTopicPath)).
+		InScenario(topicScenarioName).
+		WhenScenarioStateIs(scenarioStateTopicHasBeenUpdated).
+		WillReturn(
+			string(readCreatedTopicResponse),
+			contentTypeJSONHeader,
+			http.StatusOK,
+		))
 
 	readCreatedTopicConfigResponse, _ := ioutil.ReadFile("../testdata/kafka_topic/read_created_kafka_topic_config.json")
 	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo(readKafkaTopicConfigPath)).
@@ -140,9 +155,30 @@ func TestAccTopic(t *testing.T) {
 			http.StatusNotFound,
 		))
 
-	deleteTopicStub := wiremock.Delete(wiremock.URLPathEqualTo(readKafkaTopicPath)).
+	updateTopicStub := wiremock.Post(wiremock.URLPathEqualTo(updateKafkaTopicConfigPath)).
 		InScenario(topicScenarioName).
 		WhenScenarioStateIs(scenarioStateTopicHasBeenCreated).
+		WillSetStateTo(scenarioStateTopicHasBeenUpdated).
+		WillReturn(
+			"",
+			contentTypeJSONHeader,
+			http.StatusNoContent,
+		)
+	_ = wiremockClient.StubFor(updateTopicStub)
+
+	readUpdatedTopicConfigResponse, _ := ioutil.ReadFile("../testdata/kafka_topic/read_updated_kafka_topic_config.json")
+	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo(readKafkaTopicConfigPath)).
+		InScenario(topicScenarioName).
+		WhenScenarioStateIs(scenarioStateTopicHasBeenUpdated).
+		WillReturn(
+			string(readUpdatedTopicConfigResponse),
+			contentTypeJSONHeader,
+			http.StatusOK,
+		))
+
+	deleteTopicStub := wiremock.Delete(wiremock.URLPathEqualTo(readKafkaTopicPath)).
+		InScenario(topicScenarioName).
+		WhenScenarioStateIs(scenarioStateTopicHasBeenUpdated).
 		WillSetStateTo(scenarioStateTopicHasBeenDeleted).
 		WillReturn(
 			"",
@@ -181,6 +217,27 @@ func TestAccTopic(t *testing.T) {
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "config.%", "2"),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "config.max.message.bytes", "12345"),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "config.retention.ms", "6789"),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.#", "1"),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.0.%", "2"),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.0.key", kafkaApiKey),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.0.secret", kafkaApiSecret),
+				),
+			},
+			{
+				Config: testAccCheckTopicUpdatedConfig(confluentCloudBaseUrl, mockTopicTestServerUrl),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTopicExists(fullTopicResourceLabel),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "kafka_cluster", clusterId),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "id", fmt.Sprintf("%s/%s", clusterId, topicName)),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "%", numberOfResourceAttributes),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "topic_name", topicName),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "partitions_count", strconv.Itoa(partitionCount)),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "http_endpoint", mockTopicTestServerUrl),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, "config.%", "4"),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, fmt.Sprintf("config.%s", firstConfigName), firstConfigValue),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, fmt.Sprintf("config.%s", secondConfigName), secondConfigUpdatedValue),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, fmt.Sprintf("config.%s", thirdConfigName), thirdConfigAddedValue),
+					resource.TestCheckResourceAttr(fullTopicResourceLabel, fmt.Sprintf("config.%s", fourthConfigName), fourthConfigAddedValue),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.#", "1"),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.0.%", "2"),
 					resource.TestCheckResourceAttr(fullTopicResourceLabel, "credentials.0.key", kafkaApiKey),
@@ -245,6 +302,33 @@ func testAccCheckTopicConfig(confluentCloudBaseUrl, mockServerUrl string) string
 	  }
 	}
 	`, confluentCloudBaseUrl, topicResourceLabel, clusterId, topicName, partitionCount, mockServerUrl, firstConfigName, firstConfigValue, secondConfigName, secondConfigValue, kafkaApiKey, kafkaApiSecret)
+}
+
+func testAccCheckTopicUpdatedConfig(confluentCloudBaseUrl, mockServerUrl string) string {
+	return fmt.Sprintf(`
+	provider "confluentcloud" {
+      endpoint = "%s"
+    }
+	resource "confluentcloud_kafka_topic" "%s" {
+	  kafka_cluster = "%s"
+	
+	  topic_name = "%s"
+	  partitions_count = "%d"
+	  http_endpoint = "%s"
+	
+	  config = {
+		"%s" = "%s"
+		"%s" = "%s"
+		"%s" = "%s"
+		"%s" = "%s"
+	  }
+
+	  credentials {
+		key = "%s"
+		secret = "%s"
+	  }
+	}
+	`, confluentCloudBaseUrl, topicResourceLabel, clusterId, topicName, partitionCount, mockServerUrl, firstConfigName, firstConfigValue, secondConfigName, secondConfigUpdatedValue, thirdConfigName, thirdConfigAddedValue, fourthConfigName, fourthConfigAddedValue, kafkaApiKey, kafkaApiSecret)
 }
 
 func testAccCheckTopicExists(n string) resource.TestCheckFunc {
