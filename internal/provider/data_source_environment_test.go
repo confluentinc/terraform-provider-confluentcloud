@@ -79,6 +79,16 @@ func TestAccDataSourceEnvironment(t *testing.T) {
 			http.StatusOK,
 		))
 
+	readEnvironmentsResponse, _ := ioutil.ReadFile("../testdata/environment/read_envs.json")
+	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/org/v2/environments")).
+		InScenario(envScenarioDataSourceName).
+		WhenScenarioStateIs(wiremock.ScenarioStateStarted).
+		WillReturn(
+			string(readEnvironmentsResponse),
+			contentTypeJSONHeader,
+			http.StatusOK,
+		))
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: testAccProviderFactories,
@@ -86,7 +96,15 @@ func TestAccDataSourceEnvironment(t *testing.T) {
 		// https://www.terraform.io/docs/extend/best-practices/testing.html#built-in-patterns
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckDataSourceEnvironmentConfig(mockServerUrl, environmentDataSourceLabel, environmentId),
+				Config: testAccCheckDataSourceEnvironmentConfigWithIdSet(mockServerUrl, environmentDataSourceLabel, environmentId),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckEnvironmentExists(fmt.Sprintf("data.confluentcloud_environment.%s", environmentDataSourceLabel)),
+					resource.TestCheckResourceAttr(fmt.Sprintf("data.confluentcloud_environment.%s", environmentDataSourceLabel), paramId, environmentId),
+					resource.TestCheckResourceAttr(fmt.Sprintf("data.confluentcloud_environment.%s", environmentDataSourceLabel), paramDisplayName, environmentDataSourceDisplayName),
+				),
+			},
+			{
+				Config: testAccCheckDataSourceEnvironmentConfigWithDisplayNameSet(mockServerUrl, environmentDataSourceLabel, environmentDataSourceDisplayName),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEnvironmentExists(fmt.Sprintf("data.confluentcloud_environment.%s", environmentDataSourceLabel)),
 					resource.TestCheckResourceAttr(fmt.Sprintf("data.confluentcloud_environment.%s", environmentDataSourceLabel), paramId, environmentId),
@@ -97,7 +115,7 @@ func TestAccDataSourceEnvironment(t *testing.T) {
 	})
 }
 
-func testAccCheckDataSourceEnvironmentConfig(mockServerUrl, environmentDataSourceLabel, environmentId string) string {
+func testAccCheckDataSourceEnvironmentConfigWithIdSet(mockServerUrl, environmentDataSourceLabel, environmentId string) string {
 	return fmt.Sprintf(`
 	provider "confluentcloud" {
  		endpoint = "%s"
@@ -106,4 +124,15 @@ func testAccCheckDataSourceEnvironmentConfig(mockServerUrl, environmentDataSourc
 		id = "%s"
 	}
 	`, mockServerUrl, environmentDataSourceLabel, environmentId)
+}
+
+func testAccCheckDataSourceEnvironmentConfigWithDisplayNameSet(mockServerUrl, environmentDataSourceLabel, displayName string) string {
+	return fmt.Sprintf(`
+	provider "confluentcloud" {
+ 		endpoint = "%s"
+	}
+	data "confluentcloud_environment" "%s" {
+		display_name = "%s"
+	}
+	`, mockServerUrl, environmentDataSourceLabel, displayName)
 }
