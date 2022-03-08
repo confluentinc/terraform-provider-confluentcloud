@@ -83,6 +83,16 @@ func TestAccDataSourceServiceAccount(t *testing.T) {
 			http.StatusOK,
 		))
 
+	readServiceAccountsResponse, _ := ioutil.ReadFile("../testdata/service_account/read_sas.json")
+	_ = wiremockClient.StubFor(wiremock.Get(wiremock.URLPathEqualTo("/iam/v2/service-accounts")).
+		InScenario(envScenarioDataSourceName).
+		WhenScenarioStateIs(wiremock.ScenarioStateStarted).
+		WillReturn(
+			string(readServiceAccountsResponse),
+			contentTypeJSONHeader,
+			http.StatusOK,
+		))
+
 	fullServiceAccountDataSourceLabel := fmt.Sprintf("data.confluentcloud_service_account.%s", saResourceLabel)
 
 	resource.Test(t, resource.TestCase{
@@ -92,7 +102,18 @@ func TestAccDataSourceServiceAccount(t *testing.T) {
 		// https://www.terraform.io/docs/extend/best-practices/testing.html#built-in-patterns
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckDataSourceServiceAccountConfig(mockServerUrl, saResourceLabel, saId),
+				Config: testAccCheckDataSourceServiceAccountConfigWithIdSet(mockServerUrl, saResourceLabel, saId),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceAccountExists(fullServiceAccountDataSourceLabel),
+					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramId, saId),
+					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramApiVersion, saApiVersion),
+					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramKind, saKind),
+					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramDisplayName, saDisplayName),
+					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramDescription, saDescription),
+				),
+			},
+			{
+				Config: testAccCheckDataSourceServiceAccountConfigWithDisplayNameSet(mockServerUrl, saResourceLabel, saDisplayName),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountExists(fullServiceAccountDataSourceLabel),
 					resource.TestCheckResourceAttr(fullServiceAccountDataSourceLabel, paramId, saId),
@@ -106,7 +127,7 @@ func TestAccDataSourceServiceAccount(t *testing.T) {
 	})
 }
 
-func testAccCheckDataSourceServiceAccountConfig(mockServerUrl, saResourceLabel, saId string) string {
+func testAccCheckDataSourceServiceAccountConfigWithIdSet(mockServerUrl, saResourceLabel, saId string) string {
 	return fmt.Sprintf(`
 	provider "confluentcloud" {
 		endpoint = "%s"
@@ -115,4 +136,15 @@ func testAccCheckDataSourceServiceAccountConfig(mockServerUrl, saResourceLabel, 
 		id = "%s"
 	}
 	`, mockServerUrl, saResourceLabel, saId)
+}
+
+func testAccCheckDataSourceServiceAccountConfigWithDisplayNameSet(mockServerUrl, saResourceLabel, displayName string) string {
+	return fmt.Sprintf(`
+	provider "confluentcloud" {
+		endpoint = "%s"
+	}
+	data "confluentcloud_service_account" "%s" {
+		display_name = "%s"
+	}
+	`, mockServerUrl, saResourceLabel, displayName)
 }
