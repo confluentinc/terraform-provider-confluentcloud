@@ -441,7 +441,7 @@ func readAndSetResourceConfigurationArguments(ctx context.Context, d *schema.Res
 
 		// https://learn.hashicorp.com/tutorials/terraform/provider-setup
 		isResourceNotFound := HasStatusForbidden(resp) && !HasStatusForbiddenDueToInvalidAPIKey(resp)
-		if isResourceNotFound {
+		if isResourceNotFound && !d.IsNewResource() {
 			log.Printf("[WARN] Kafka cluster with id=%s is not found", d.Id())
 			// If the resource isn't available, Terraform destroys the resource in state.
 			d.SetId("")

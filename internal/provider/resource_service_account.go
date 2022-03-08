@@ -132,7 +132,7 @@ func serviceAccountRead(ctx context.Context, d *schema.ResourceData, meta interf
 
 		// https://learn.hashicorp.com/tutorials/terraform/provider-setup
 		isResourceNotFound := HasStatusNotFound(resp)
-		if isResourceNotFound {
+		if isResourceNotFound && !d.IsNewResource() {
 			log.Printf("[WARN] Service account with id=%s is not found", d.Id())
 			// If the resource isn't available, Terraform destroys the resource in state.
 			d.SetId("")
