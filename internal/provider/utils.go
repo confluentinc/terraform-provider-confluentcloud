@@ -30,6 +30,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -259,6 +260,10 @@ type KafkaRestClientFactory struct {
 	userAgent string
 }
 
+type GenericOpenAPIError interface {
+	Model() interface{}
+}
+
 func (f KafkaRestClientFactory) CreateKafkaRestClient(httpEndpoint, clusterId, clusterApiKey, clusterApiSecret string) *KafkaRestClient {
 	config := kafkarestv3.NewConfiguration()
 	config.BasePath = httpEndpoint
@@ -292,52 +297,22 @@ func createDiagnosticsWithDetails(err error) diag.Diagnostics {
 	}
 	// At this point it's just status code and its generic name
 	errorMessage := err.Error()
-
 	// Add error.detail to the final error message
-	if cmkError, ok := err.(cmk.GenericOpenAPIError); ok {
-		if cmkFailure, ok := cmkError.Model().(cmk.Failure); ok {
-			cmkFailureErrors := cmkFailure.GetErrors()
-			if len(cmkFailureErrors) > 0 && cmkFailureErrors[0].Detail != nil {
-				errorMessage = fmt.Sprintf("%s: %s", errorMessage, *cmkFailureErrors[0].Detail)
+	if genericOpenAPIError, ok := err.(GenericOpenAPIError); ok {
+		var failure = genericOpenAPIError.Model()
+		var reflectedFailure = reflect.ValueOf(&failure).Elem().Elem()
+		errs := reflect.Indirect(reflectedFailure).FieldByName("Errors")
+		kafkaRestErrDetailPtr := reflect.Indirect(reflectedFailure).FieldByName("Message")
+		if errs.Kind() == reflect.Slice && errs.Len() > 0 {
+			nest := errs.Index(0)
+			detailPtr := nest.FieldByName("Detail")
+			if detailPtr.IsValid() && !detailPtr.IsNil() {
+				errorMessage = fmt.Sprintf("%s: %s", errorMessage, reflect.Indirect(detailPtr))
 			}
+		} else if kafkaRestErrDetailPtr.IsValid() && !kafkaRestErrDetailPtr.IsNil() {
+			errorMessage = fmt.Sprintf("%s: %s", errorMessage, reflect.Indirect(kafkaRestErrDetailPtr))
 		}
 	}
-
-	if iamError, ok := err.(iam.GenericOpenAPIError); ok {
-		if iamFailure, ok := iamError.Model().(iam.Failure); ok {
-			iamFailureErrors := iamFailure.GetErrors()
-			if len(iamFailureErrors) > 0 && iamFailureErrors[0].Detail != nil {
-				errorMessage = fmt.Sprintf("%s: %s", errorMessage, *iamFailureErrors[0].Detail)
-			}
-		}
-	}
-
-	if mdsError, ok := err.(mds.GenericOpenAPIError); ok {
-		if mdsFailure, ok := mdsError.Model().(mds.Failure); ok {
-			mdsFailureErrors := mdsFailure.GetErrors()
-			if len(mdsFailureErrors) > 0 && mdsFailureErrors[0].Detail != nil {
-				errorMessage = fmt.Sprintf("%s: %s", errorMessage, *mdsFailureErrors[0].Detail)
-			}
-		}
-	}
-
-	if orgError, ok := err.(org.GenericOpenAPIError); ok {
-		if orgFailure, ok := orgError.Model().(org.Failure); ok {
-			orgFailureErrors := orgFailure.GetErrors()
-			if len(orgFailureErrors) > 0 && orgFailureErrors[0].Detail != nil {
-				errorMessage = fmt.Sprintf("%s: %s", errorMessage, *orgFailureErrors[0].Detail)
-			}
-		}
-	}
-
-	if kafkaRestGenericOpenAPIError, ok := err.(kafkarestv3.GenericOpenAPIError); ok {
-		if kafkaRestError, ok := kafkaRestGenericOpenAPIError.Model().(kafkarestv3.Error); ok {
-			if kafkaRestError.Message != nil {
-				errorMessage = fmt.Sprintf("%s: %s", errorMessage, *kafkaRestError.Message)
-			}
-		}
-	}
-
 	return diag.Diagnostics{
 		diag.Diagnostic{
 			Severity: diag.Error,
