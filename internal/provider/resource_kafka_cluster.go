@@ -299,61 +299,6 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	return kafkaRead(ctx, d, meta)
 }
 
-func kafkaProvisioned(ctx context.Context, c *Client, environmentId string, clusterId string) resource.StateRefreshFunc {
-	return func() (result interface{}, s string, err error) {
-		cluster, resp, err := executeKafkaRead(c.cmkApiContext(ctx), c, environmentId, clusterId)
-		if err != nil {
-			log.Printf("[ERROR] Kafka cluster get failed for id %s, %+v, %s", clusterId, resp, err)
-			return nil, stateUnknown, err
-		}
-
-		jsonCluster, _ := cluster.MarshalJSON()
-		log.Printf("[DEBUG] Kafka cluster %s", jsonCluster)
-
-		if strings.ToUpper(c.waitUntil) == waitUntilProvisioned {
-			log.Printf("[DEBUG] Waiting for Kafka cluster to be PROVISIONED: current status %s", cluster.Status.GetPhase())
-			if cluster.Status.GetPhase() == waitUntilProvisioned {
-				return cluster, stateDone, nil
-			} else if cluster.Status.GetPhase() == stateFailed {
-				return nil, stateFailed, fmt.Errorf("[ERROR] Kafka cluster provisioning has failed")
-			}
-			return cluster, stateInProgress, nil
-		} else if strings.ToUpper(c.waitUntil) == waitUntilBootstrapAvailable {
-			log.Printf("[DEBUG] Waiting for Kafka cluster's boostrap endpoint to be available")
-			if cluster.Spec.GetKafkaBootstrapEndpoint() == "" {
-				return cluster, stateInProgress, nil
-			}
-			return cluster, stateDone, nil
-		}
-
-		return cluster, stateDone, nil
-	}
-}
-
-func kafkaCkuUpdated(ctx context.Context, c *Client, environmentId string, clusterId string, desiredCku int32) resource.StateRefreshFunc {
-	return func() (result interface{}, s string, err error) {
-		cluster, resp, err := executeKafkaRead(c.cmkApiContext(ctx), c, environmentId, clusterId)
-		if err != nil {
-			log.Printf("[ERROR] Failed to fetch kafka cluster (%s): %+v, %s", clusterId, resp, err)
-			return nil, stateUnknown, err
-		}
-
-		jsonCluster, _ := cluster.MarshalJSON()
-		log.Printf("[DEBUG] Kafka cluster %s", jsonCluster)
-
-		log.Printf("[DEBUG] Waiting for CKU update of Kafka cluster")
-		// Wail until actual # of CKUs is the same as desired one
-		// spec.cku is the user’s desired # of CKUs, and status.cku is the current # of CKUs in effect
-		// because the change is still pending, for example
-		// Use desiredCku on the off chance that API will not work as expected (i.e., spec.cku = status.cku during expansion).
-		// CAPAC-293
-		if cluster.Status.GetCku() == cluster.Spec.Config.CmkV2Dedicated.Cku && cluster.Status.GetCku() == desiredCku {
-			return cluster, stateDone, nil
-		}
-		return cluster, stateInProgress, nil
-	}
-}
-
 func extractClusterType(d *schema.ResourceData) string {
 	basicConfigBlock := d.Get(paramBasicCluster).([]interface{})
 	standardConfigBlock := d.Get(paramStandardCluster).([]interface{})
