@@ -17,6 +17,10 @@ data "confluentcloud_service_account" "example_using_id" {
   id = "sa-abc123"
 }
 
+output "example_using_id" {
+  value = data.confluentcloud_service_account.example_using_id
+}
+
 data "confluentcloud_service_account" "example_using_name" {
   display_name = "test_sa"
 }

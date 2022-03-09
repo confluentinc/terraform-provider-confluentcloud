@@ -17,6 +17,10 @@ data "confluentcloud_environment" "example_using_id" {
   id = "env-abc123"
 }
 
+output "example_using_id" {
+  value = data.confluentcloud_environment.example_using_id
+}
+
 data "confluentcloud_environment" "example_using_name" {
   display_name = "stag"
 }
