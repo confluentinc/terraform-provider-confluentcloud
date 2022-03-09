@@ -1,3 +1,15 @@
+## 0.5.0 (March 9, 2022)
+
+[Full Changelog](https://github.com/confluentinc/terraform-provider-confluentcloud/compare/v0.4.0...v0.5.0)
+
+* Added support for Kafka topic configuration updates ([#11](https://github.com/confluentinc/terraform-provider-confluentcloud/issues/11)).
+* Added support for `display_name` input for `confluentcloud_environment` and `confluentcloud_service_account` data sources ([#42](https://github.com/confluentinc/terraform-provider-confluentcloud/issues/42), [#46](https://github.com/confluentinc/terraform-provider-confluentcloud/issues/46)).
+* Fixed _Provider produced inconsistent result after apply_ error when creating a lot of Kafka topics ([#40](https://github.com/confluentinc/terraform-provider-confluentcloud/issues/40)).
+* Updated delete operation for `confluentcloud_kafka_topic` resource to avoid _400 Bad Request: Topic 'foobar' is marked for deletion_ error when recreating a lot of Kafka topics ([#50](https://github.com/confluentinc/terraform-provider-confluentcloud/issues/50)).
+* Added support for old environment IDs ([#43](https://github.com/confluentinc/terraform-provider-confluentcloud/issues/43)).
+* Added `api_version` and `kind` computed attributes to `confluentcloud_kafka_cluster` and `confluentcloud_service_account` resources.
+* Fixed docs issues.
+
 ## 0.4.0 (January 28, 2022)
 
 [Full Changelog](https://github.com/confluentinc/terraform-provider-confluentcloud/compare/v0.3.0...v0.4.0)
