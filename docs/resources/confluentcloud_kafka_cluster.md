@@ -39,8 +39,8 @@ resource "confluentcloud_environment" "test-env" {
   display_name = "Development"
 }
 
-resource "confluentcloud_kafka_cluster" "basic-cluster" {
-  display_name = "basic_kafka_cluster"
+resource "confluentcloud_kafka_cluster" "standard-cluster" {
+  display_name = "standard_kafka_cluster"
   availability = "SINGLE_ZONE"
   cloud        = "AZURE"
   region       = "centralus"
@@ -59,8 +59,8 @@ resource "confluentcloud_environment" "test-env" {
   display_name = "Development"
 }
 
-resource "confluentcloud_kafka_cluster" "basic-cluster" {
-  display_name = "basic_kafka_cluster"
+resource "confluentcloud_kafka_cluster" "dedicated-cluster" {
+  display_name = "dedicated_kafka_cluster"
   availability = "MULTI_ZONE"
   cloud        = "GCP"
   region       = "us-central1"
