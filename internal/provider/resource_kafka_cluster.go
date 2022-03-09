@@ -18,17 +18,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	cmk "github.com/confluentinc/ccloud-sdk-go-v2/cmk/v2"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
 	"net/http"
 	"strings"
-	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-
-	cmk "github.com/confluentinc/ccloud-sdk-go-v2/cmk/v2"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const (
@@ -201,18 +197,9 @@ func kafkaUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 			return createDiagnosticsWithDetails(err)
 		}
 
-		stateConf := &resource.StateChangeConf{
-			Pending:      []string{stateInProgress},
-			Target:       []string{stateDone},
-			Refresh:      kafkaCkuUpdated(c.cmkApiContext(ctx), c, environmentId, d.Id(), cku),
-			Timeout:      24 * time.Hour,
-			Delay:        5 * time.Second,
-			PollInterval: 1 * time.Minute,
-		}
-
 		log.Printf("[DEBUG] Waiting for Kafka cluster CKU update to complete")
-		_, err = stateConf.WaitForStateContext(c.cmkApiContext(ctx))
-		if err != nil {
+
+		if err := waitForKafkaClusterCkuUpdateToComplete(c.cmkApiContext(ctx), c, environmentId, d.Id(), cku); err != nil {
 			return diag.Errorf("error waiting for CKU update of Kafka cluster (%s): %s", d.Id(), err)
 		}
 	}
@@ -279,21 +266,11 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		return createDiagnosticsWithDetails(err)
 	}
 	d.SetId(kafka.GetId())
-	log.Printf("[DEBUG] Created cluster %s", kafka.GetId())
 
-	stateConf := &resource.StateChangeConf{
-		Pending:      []string{stateInProgress},
-		Target:       []string{stateDone},
-		Refresh:      kafkaProvisioned(c.cmkApiContext(ctx), c, environmentId, d.Id()),
-		Timeout:      getTimeoutFor(clusterType),
-		Delay:        5 * time.Second,
-		PollInterval: 1 * time.Minute,
-	}
+	log.Printf("[DEBUG] Creating Kafka cluster %s", kafka.GetId())
 
-	log.Printf("[DEBUG] Waiting for Kafka cluster provisioning to become %s", stateDone)
-	_, err = stateConf.WaitForStateContext(c.cmkApiContext(ctx))
-	if err != nil {
-		return diag.Errorf("error waiting for Kafka cluster (%s) to be %s: %s", d.Id(), err, stateDone)
+	if err := waitForKafkaClusterToProvision(c.cmkApiContext(ctx), c, environmentId, d.Id(), clusterType); err != nil {
+		return diag.Errorf("error waiting for Kafka cluster (%s) to provision: %s", d.Id(), err)
 	}
 
 	return kafkaRead(ctx, d, meta)

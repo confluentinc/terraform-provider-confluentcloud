@@ -176,6 +176,12 @@ func kafkaTopicDelete(ctx context.Context, d *schema.ResourceData, meta interfac
 		return diag.Errorf("error deleting kafka topic (%s), err: %s", d.Id(), err)
 	}
 
+	if err := waitForKafkaTopicToBeDeleted(kafkaRestClient.apiContext(ctx), kafkaRestClient, topicName); err != nil {
+		return diag.Errorf("error waiting for Kafka topic (%s) to be deleted, err: %s", d.Id(), err)
+	}
+
+	log.Printf("[INFO] Kafka topic %s was deleted successfully", d.Id())
+
 	return nil
 }
 

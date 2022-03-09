@@ -20,9 +20,72 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"log"
 	"strings"
+	"time"
 )
 
-func kafkaCkuUpdated(ctx context.Context, c *Client, environmentId string, clusterId string, desiredCku int32) resource.StateRefreshFunc {
+func waitForKafkaClusterToProvision(ctx context.Context, c *Client, environmentId, clusterId, clusterType string) error {
+	stateConf := &resource.StateChangeConf{
+		Pending:      []string{stateInProgress},
+		Target:       []string{stateDone},
+		Refresh:      kafkaClusterProvisionStatus(c.cmkApiContext(ctx), c, environmentId, clusterId),
+		Timeout:      getTimeoutFor(clusterType),
+		Delay:        5 * time.Second,
+		PollInterval: 1 * time.Minute,
+	}
+
+	log.Printf("[DEBUG] Waiting for Kafka cluster provisioning to become %s", stateDone)
+	_, err := stateConf.WaitForStateContext(c.cmkApiContext(ctx))
+	return err
+}
+
+func waitForKafkaClusterCkuUpdateToComplete(ctx context.Context, c *Client, environmentId, clusterId string, cku int32) error {
+	stateConf := &resource.StateChangeConf{
+		Pending:      []string{stateInProgress},
+		Target:       []string{stateDone},
+		Refresh:      kafkaClusterCkuUpdateStatus(c.cmkApiContext(ctx), c, environmentId, clusterId, cku),
+		Timeout:      24 * time.Hour,
+		Delay:        5 * time.Second,
+		PollInterval: 1 * time.Minute,
+	}
+
+	log.Printf("[DEBUG] Waiting for Kafka cluster provisioning to become %s", stateDone)
+	_, err := stateConf.WaitForStateContext(c.cmkApiContext(ctx))
+	return err
+}
+
+func waitForKafkaTopicToBeDeleted(ctx context.Context, c *KafkaRestClient, topicName string) error {
+	stateConf := &resource.StateChangeConf{
+		Pending:      []string{stateInProgress},
+		Target:       []string{stateDone},
+		Refresh:      kafkaTopicStatus(c.apiContext(ctx), c, topicName),
+		Timeout:      1 * time.Hour,
+		Delay:        10 * time.Second,
+		PollInterval: 1 * time.Minute,
+	}
+
+	log.Printf("[DEBUG] Waiting for Kafka topic to be deleted")
+	_, err := stateConf.WaitForStateContext(c.apiContext(ctx))
+	return err
+}
+
+func kafkaTopicStatus(ctx context.Context, c *KafkaRestClient, topicName string) resource.StateRefreshFunc {
+	return func() (result interface{}, s string, err error) {
+		kafkaTopic, resp, err := c.apiClient.TopicV3Api.GetKafkaV3Topic(c.apiContext(ctx), c.clusterId, topicName)
+		if err != nil {
+			log.Printf("[WARN] Kafka topic get failed for id %s, %v, %s", topicName, resp, err)
+
+			// 404 means that the topic has been deleted
+			isResourceNotFound := HasStatusNotFound(resp)
+			if isResourceNotFound {
+				// Result (the 1st argument) can't be nil
+				return 0, stateDone, nil
+			}
+		}
+		return kafkaTopic, stateInProgress, nil
+	}
+}
+
+func kafkaClusterCkuUpdateStatus(ctx context.Context, c *Client, environmentId string, clusterId string, desiredCku int32) resource.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		cluster, resp, err := executeKafkaRead(c.cmkApiContext(ctx), c, environmentId, clusterId)
 		if err != nil {
@@ -46,7 +109,7 @@ func kafkaCkuUpdated(ctx context.Context, c *Client, environmentId string, clust
 	}
 }
 
-func kafkaProvisioned(ctx context.Context, c *Client, environmentId string, clusterId string) resource.StateRefreshFunc {
+func kafkaClusterProvisionStatus(ctx context.Context, c *Client, environmentId string, clusterId string) resource.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		cluster, resp, err := executeKafkaRead(c.cmkApiContext(ctx), c, environmentId, clusterId)
 		if err != nil {
