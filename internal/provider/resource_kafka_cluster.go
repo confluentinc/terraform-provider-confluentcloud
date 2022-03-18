@@ -241,6 +241,7 @@ func kafkaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		spec.SetConfig(cmk.CmkV2StandardAsCmkV2ClusterSpecConfigOneOf(cmk.NewCmkV2Standard(kafkaClusterTypeStandard)))
 	} else if clusterType == kafkaClusterTypeDedicated {
 		cku := extractCku(d)
+		networking := extractNetworking(d)
 		err = ckuCheck(cku, availability)
 		if err != nil {
 			return createDiagnosticsWithDetails(err)
@@ -299,6 +300,16 @@ func extractCku(d *schema.ResourceData) int32 {
 
 	// d.Get() will return 0 if the key is not present
 	return int32(d.Get(paramDedicatedCku).(int))
+}
+
+func extractNetworking(d *schema.ResourceData) int32 {
+       // Networking can only be defined for dedicated clusters
+       if kafkaClusterTypeDedicated != extractClusterType(d) {
+         return 0
+       }
+
+       // d.Get() will return 0 if key is not present
+       return string(d.Get(paramNetworking).(string))
 }
 
 func kafkaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -469,7 +480,7 @@ func dedicatedClusterSchema() *schema.Schema {
 	return &schema.Schema{
 		Type:     schema.TypeList,
 		Optional: true,
-		MaxItems: 1,
+		MaxItems: 2,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
 				paramCku: {
@@ -479,6 +490,34 @@ func dedicatedClusterSchema() *schema.Schema {
 					// TODO: add validation for CKUs >= 2 of MULTI_ZONE dedicated clusters
 					ValidateFunc: validation.IntAtLeast(1),
 				},
+				paramNetworkging: networkingClusterSchema(),
+			},
+		},
+		ExactlyOneOf: acceptedClusterTypes,
+	}
+}
+
+
+func networkingClusterSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		MaxItems: 2,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				paramType: {
+					Type:        schema.TypeInt,
+					Required:    true,
+					Description: "The number of Confluent Kafka Units (CKUs) for Dedicated cluster types. MULTI_ZONE dedicated clusters must have at least two CKUs.",
+				        ValidateFunc: validation.StringIsNotEmpty,
+				},
+				paramCIDR: {
+				        Type:	     schema.TypeSting,
+					Required:    true,
+					Description: "The CIDR block used by the cluster.",
+				        ValidateFunc: validation.StringIsNotEmpty,
+				},
+
 			},
 		},
 		ExactlyOneOf: acceptedClusterTypes,
