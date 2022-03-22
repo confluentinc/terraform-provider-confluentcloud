@@ -48,6 +48,7 @@ func serviceAccountResource() *schema.Resource {
 			paramDisplayName: {
 				Type:         schema.TypeString,
 				Required:     true,
+				ForceNew:    true,
 				Description:  "A human-readable name for the Service Account.",
 				ValidateFunc: validation.StringIsNotEmpty,
 			},
