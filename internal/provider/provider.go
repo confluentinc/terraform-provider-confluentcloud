@@ -42,6 +42,7 @@ const (
 	paramId          = "id"
 	paramDisplayName = "display_name"
 	paramDescription = "description"
+	paramEmail       = "email"
 	paramKind        = "kind"
 )
 
@@ -115,6 +116,7 @@ func New(version string) func() *schema.Provider {
 				"confluentcloud_kafka_topic":     kafkaTopicDataSource(),
 				"confluentcloud_environment":     environmentDataSource(),
 				"confluentcloud_service_account": serviceAccountDataSource(),
+				"confluentcloud_user":            userAccountDataSource(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"confluentcloud_kafka_cluster":   kafkaResource(),

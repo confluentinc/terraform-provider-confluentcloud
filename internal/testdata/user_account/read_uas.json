@@ -1,0 +1,33 @@
+{
+  "api_version": "iam/v2",
+  "data": [
+    {
+      "api_version": "iam/v2",
+      "email": "foo@bar.com",
+      "full_name": "temp",
+      "id": "u-o35pz9",
+      "kind": "User",
+      "metadata": {
+        "created_at": "2021-12-11T22:45:57.09206Z",
+        "resource_name": "crn://confluent.cloud/user=u-o35pz9",
+        "self": "https://api.confluent.cloud/iam/v2/users/u-o35pz9",
+        "updated_at": "2021-12-11T22:53:12.537582Z"
+      }
+    },
+    {
+      "api_version": "iam/v2",
+      "email": "user@example.com",
+      "full_name": "test_user_full_name",
+      "id": "u-l793v1",
+      "kind": "User",
+      "metadata": {
+        "created_at": "2022-02-17T00:59:26.067442Z",
+        "resource_name": "crn://confluent.cloud/user=u-l793v1",
+        "self": "https://api.confluent.cloud/iam/v2/users/u-l793v1",
+        "updated_at": "2022-02-17T00:59:26.067442Z"
+      }
+    }
+  ],
+  "kind": "UserList",
+  "metadata": {}
+}
