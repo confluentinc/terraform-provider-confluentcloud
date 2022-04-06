@@ -14,6 +14,7 @@
 To compile the provider, run `make build`. This will build the provider and put the provider binary in the `bin` directory.
 
 ```shell
+$ make deps
 $ make build
 ```
 
