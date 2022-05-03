@@ -8,6 +8,8 @@ description: |-
 
 # confluentcloud_environment Data Source
 
+!> **Warning:** The [Confluent Cloud Provider](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs) is deprecated in favor of the [Confluent Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs).
+
 `confluentcloud_environment` describes an Environment data source. The data source requires the ID of the Environment (e.g., `env-abc123`).
 
 ## Example Usage

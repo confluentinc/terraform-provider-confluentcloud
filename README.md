@@ -1,16 +1,8 @@
-# Terraform Provider for Confluent Cloud
-
-The Terraform Confluent Cloud provider is a plugin for Terraform that allows for the lifecycle management of Confluent Cloud resources.
-This provider is maintained by Confluent.
-
-## Quick Starts
-
-- [Running an example](docs/guides/sample-project.md)
-- [Developing the provider](docs/DEVELOPING.md)
+# [Confluent Cloud Terraform Provider](https://github.com/confluentinc/terraform-provider-confluentcloud) is deprecated in favor of [Confluent Terraform Provider](https://github.com/confluentinc/terraform-provider-confluent)
 
 ## Documentation
 
-Full documentation is available on the [Terraform website](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs).
+Full documentation is available on the [Terraform website](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs).
 
 ## License
 

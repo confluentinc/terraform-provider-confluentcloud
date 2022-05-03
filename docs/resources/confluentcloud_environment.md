@@ -8,6 +8,8 @@ description: |-
 
 # confluentcloud_environment Resource
 
+!> **Warning:** The [Confluent Cloud Provider](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs) is deprecated in favor of the [Confluent Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs).
+
 `confluentcloud_environment` provides an Environment resource. The resource lets you create, edit and delete environments on Confluent Cloud.
 
 ## Example Usage

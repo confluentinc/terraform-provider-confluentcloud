@@ -1,3 +1,11 @@
+## [Terraform Provider for Confluent Cloud](https://github.com/confluentinc/terraform-provider-confluentcloud) is deprecated in favor of [Terraform Provider for Confluent](https://github.com/confluentinc/terraform-provider-confluent)
+
+## 0.6.0 (May 3, 2022)
+
+[Full Changelog](https://github.com/confluentinc/terraform-provider-confluentcloud/compare/v0.5.0...v0.6.0)
+
+* Deprecated the [Confluent Cloud Terraform Provider](https://github.com/confluentinc/terraform-provider-confluentcloud) in favor of the [Confluent Terraform Provider](https://github.com/confluentinc/terraform-provider-confluent).
+
 ## 0.5.0 (March 9, 2022)
 
 [Full Changelog](https://github.com/confluentinc/terraform-provider-confluentcloud/compare/v0.4.0...v0.5.0)

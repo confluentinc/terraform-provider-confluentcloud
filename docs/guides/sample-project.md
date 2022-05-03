@@ -4,6 +4,8 @@ page_title: "Sample Project"
 
 # Sample Project for Confluent Cloud Terraform Provider
 
+!> **Warning:** The [Confluent Cloud Provider](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs) is deprecated in favor of the [Confluent Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs).
+
 Use the Confluent Cloud Terraform provider to automate the workflow for creating
 a _Service Account_, a _Confluent Cloud environment_, a _Kafka cluster_, and
 _Topics_. Also, you can use this provider to assign permissions (_ACLs_) that

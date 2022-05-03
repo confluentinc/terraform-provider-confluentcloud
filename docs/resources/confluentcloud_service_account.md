@@ -8,6 +8,8 @@ description: |-
 
 # confluentcloud_service_account Resource
 
+!> **Warning:** The [Confluent Cloud Provider](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs) is deprecated in favor of the [Confluent Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs).
+
 `confluentcloud_service_account` provides a Service Account resource that enables creating, editing, and deleting service accounts on Confluent Cloud.
 
 ## Example Usage

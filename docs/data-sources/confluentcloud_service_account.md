@@ -8,6 +8,8 @@ description: |-
 
 # confluentcloud_service_account Data Source
 
+!> **Warning:** The [Confluent Cloud Provider](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs) is deprecated in favor of the [Confluent Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs).
+
 `confluentcloud_service_account` describes a Service Account data source. The data source requires the ID of the Service Account (e.g., `sa-abc123`).
 
 ## Example Usage

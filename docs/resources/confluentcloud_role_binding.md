@@ -8,6 +8,8 @@ description: |-
 
 # confluentcloud_role_binding Resource
 
+!> **Warning:** The [Confluent Cloud Provider](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs) is deprecated in favor of the [Confluent Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs).
+
 `confluentcloud_role_binding` provides a Role Binding resource that enables creating, reading, and deleting role bindings on Confluent Cloud.
 
 ## Example Usage

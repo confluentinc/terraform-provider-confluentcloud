@@ -8,6 +8,8 @@ description: |-
 
 # confluentcloud_kafka_cluster Data Source
 
+!> **Warning:** The [Confluent Cloud Provider](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs) is deprecated in favor of the [Confluent Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs).
+
 `confluentcloud_kafka_cluster` describes a Kafka cluster data source. The data source requires the ID of the Kafka cluster (e.g., `lkc-abc123`) and the Environment ID it belongs to (e.g., `env-xyz456`).
 
 ## Example Usage

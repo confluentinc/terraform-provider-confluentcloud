@@ -8,6 +8,8 @@ description: |-
 
 # confluentcloud_kafka_topic Data Source
 
+!> **Warning:** The [Confluent Cloud Provider](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs) is deprecated in favor of the [Confluent Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs).
+
 `confluentcloud_kafka_topic` describes a Kafka Topic data source.
 
 ## Example Usage

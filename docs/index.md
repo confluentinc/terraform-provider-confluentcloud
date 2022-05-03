@@ -5,7 +5,9 @@ description: |-
   
 ---
 
-# Confluent Cloud Provider
+# [Confluent Cloud Provider](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs) is deprecated in favor of [Confluent Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs)
+
+!> **Warning:** The [Confluent Cloud Provider](https://registry.terraform.io/providers/confluentinc/confluentcloud/latest/docs) is deprecated in favor of the [Confluent Provider](https://registry.terraform.io/providers/confluentinc/confluent/latest/docs).
 
 Simplify Apache Kafka Terraform deployment with the Confluent Cloud Terraform Provider. Manage Environments, Kafka Clusters, Kafka Topics, Kafka ACLs, Service Accounts, and more in Confluent Cloud.
 
